@@ -20,7 +20,7 @@ SYMBOL = "BTC/USDT"
 TIMEFRAME = "15m"
 CANDLE_LIMIT = 1000
 HORIZON = 3
-THRESHOLD = 0.004  # 0.4% forward return; transaction costs still need careful validation.
+THRESHOLD = 0.004  # 0.4% forward return; costs still need careful validation.
 
 
 def main():
@@ -33,13 +33,13 @@ def main():
     df = add_indicators(df)
     X = make_features(df)
     future_return = df["close"].shift(-HORIZON) / df["close"] - 1
-    y = pd.Series("HOLD", index=df.index)
+    y = pd.Series("HOLD", index=df.index, dtype="object")
     y.loc[future_return > THRESHOLD] = "BUY"
     y.loc[future_return < -THRESHOLD] = "SELL"
+    y.loc[future_return.isna()] = None
     dataset = X.copy()
     dataset["label"] = y
     dataset = dataset.replace([float("inf"), float("-inf")], float("nan")).dropna()
-    # Keep the final horizon out because its future outcome is unknown.
     if len(dataset) <= 300:
         raise SystemExit("پس از پاک‌سازی، دادهٔ کافی برای آموزش باقی نماند.")
     split = int(len(dataset) * 0.8)
