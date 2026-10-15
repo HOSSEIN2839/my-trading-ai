@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from src.market import fetch_candles, technical_signal
 from src.ai_analyst import analyze_market, combine_signal
+from src.learning import load_model, make_features, predict
 from src.risk import position_size, daily_loss_limit_hit
 from src.paper_broker import PaperBroker
 
@@ -29,6 +30,9 @@ FEE = float(os.getenv("TAKER_FEE", "0.001"))
 def main():
     if os.getenv("MODE", "paper").lower() != "paper":
         raise SystemExit("این نسخه فقط MODE=paper را پشتیبانی می‌کند؛ معامله واقعی غیرفعال است.")
+    model = load_model()
+    if model is None:
+        raise SystemExit("مدل یادگیری پیدا نشد. ابتدا دستور python -m src.train_model را اجرا کن.")
     broker = PaperBroker(float(os.getenv("INITIAL_BALANCE", "1000")), fee_rate=FEE)
     last_candle = None
     logging.info("شروع ربات | %s | %s | حالت شبیه‌سازی؛ هیچ سفارش واقعی ارسال نمی‌شود", SYMBOL, TIMEFRAME)
@@ -58,9 +62,10 @@ def main():
 
             tech = technical_signal(row)
             ai = analyze_market(SYMBOL, TIMEFRAME, row, tech)
-            signal = combine_signal(tech, ai)
-            logging.info("قیمت=%.4f | تکنیکال=%s | AI=%s(%s%%) | نهایی=%s | %s",
-                         price, tech, ai["decision"], ai["confidence"], signal, ai["reason"])
+            ml = predict(row, model)
+            signal = combine_signal(tech, ai, ml)
+            logging.info("قیمت=%.4f | تکنیکال=%s | Gemini=%s(%s%%) | ML=%s(%.0f%%) | نهایی=%s",
+                         price, tech, ai["decision"], ai["confidence"], ml["decision"], ml["confidence"] * 100, signal)
 
             pos = broker.state["position"]
             atr = float(row["atr"])
@@ -72,7 +77,7 @@ def main():
                 stop = price - STOP_ATR * atr
                 target = price + RR * (price - stop)
                 qty = position_size(cash_balance, price, stop, RISK, MAX_POSITION)
-                if broker.buy(price, qty, stop, target, f"AI:{ai['confidence']} {ai['reason']}"):
+                if broker.buy(price, qty, stop, target, f"Gemini:{ai['confidence']} ML:{ml['confidence']:.2f}"):
                     logging.info("خرید مجازی: qty=%.8f stop=%.4f target=%.4f", qty, stop, target)
                 else:
                     logging.info("خرید مجازی رد شد (موجودی/اندازه/پوزیشن).")
