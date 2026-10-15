@@ -28,11 +28,18 @@ class PaperBroker:
         tmp.write_text(json.dumps(self.state, indent=2), encoding="utf-8")
         tmp.replace(self.state_path)
 
+    def equity(self, mark_price: float) -> float:
+        """Cash plus marked-to-market value of any open simulated position."""
+        pos = self.state["position"]
+        return float(self.state["balance"]) + (float(pos["quantity"]) * mark_price if pos else 0.0)
+
     def roll_day(self):
         today = datetime.now(timezone.utc).date().isoformat()
         if self.state["day"] != today:
+            pos = self.state["position"]
+            baseline = float(self.state["balance"]) + (float(pos["quantity"]) * float(pos["entry"]) if pos else 0.0)
             self.state["day"] = today
-            self.state["start_balance"] = self.state["balance"]
+            self.state["start_balance"] = baseline
             self._save()
 
     def _log(self, side, price, qty, fee, reason):
