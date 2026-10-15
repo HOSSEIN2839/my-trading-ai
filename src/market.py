@@ -26,6 +26,9 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     loss = (-delta.clip(upper=0)).ewm(alpha=1 / 14, adjust=False).mean()
     rs = gain / loss.replace(0, float("nan"))
     out["rsi"] = 100 - (100 / (1 + rs))
+    out.loc[(loss == 0) & (gain > 0), "rsi"] = 100.0
+    out.loc[(gain == 0) & (loss > 0), "rsi"] = 0.0
+    out.loc[(gain == 0) & (loss == 0), "rsi"] = 50.0
     prev_close = out["close"].shift(1)
     tr = pd.concat([
         out["high"] - out["low"],
