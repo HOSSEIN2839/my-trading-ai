@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from src.market import fetch_candles, technical_signal
 from src.ai_analyst import analyze_market, combine_signal
-from src.learning import load_model, make_features, predict
+from src.learning import load_model, make_features, predict, FEATURES
 from src.risk import position_size, daily_loss_limit_hit
 from src.paper_broker import PaperBroker
 
@@ -41,8 +41,10 @@ def main():
         try:
             broker.roll_day()
             candles = fetch_candles(SYMBOL, TIMEFRAME, LIMIT)
-            # Do not trade on the still-forming candle.
-            row = candles.iloc[-2]
+            features = make_features(candles)
+            row = candles.iloc[-2].copy()
+            for feature in FEATURES:
+                row[feature] = features.iloc[-2][feature]
             candle_id = str(row["timestamp"])
             if candle_id == last_candle:
                 time.sleep(POLL_SECONDS)
