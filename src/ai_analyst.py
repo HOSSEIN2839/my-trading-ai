@@ -14,7 +14,7 @@ def analyze_market(symbol: str, timeframe: str, row, technical: str) -> dict:
     model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     payload = {
-        "system_instruction": {"parts": [{"text":
+        "systemInstruction": {"parts": [{"text":
             "You are a cautious crypto market analyst, not a financial adviser. "
             "Return ONLY JSON with keys decision (BUY, SELL, HOLD), confidence (integer 0-100), reason (short string). "
             "Use only supplied data. Do not invent news or prices. This is long-only spot trading; never recommend shorting. "
