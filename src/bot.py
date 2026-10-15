@@ -45,12 +45,13 @@ def main():
                 continue
             last_candle = candle_id
 
-            exit_reason = broker.check_exit(float(row["low"]), float(row["high"]), float(row["close"]))
+            price = float(row["close"])
+            exit_reason = broker.check_exit(float(row["low"]), float(row["high"]), price)
             if exit_reason:
                 logging.info("خروج شبیه‌سازی‌شده: %s", exit_reason)
 
-            balance = float(broker.state["balance"])
-            if daily_loss_limit_hit(float(broker.state["start_balance"]), balance, MAX_DAILY_LOSS):
+            equity = broker.equity(price)
+            if daily_loss_limit_hit(float(broker.state["start_balance"]), equity, MAX_DAILY_LOSS):
                 logging.warning("حد زیان روزانه فعال شد؛ تا روز بعد معامله جدید انجام نمی‌شود.")
                 time.sleep(POLL_SECONDS)
                 continue
@@ -59,18 +60,18 @@ def main():
             ai = analyze_market(SYMBOL, TIMEFRAME, row, tech)
             signal = combine_signal(tech, ai)
             logging.info("قیمت=%.4f | تکنیکال=%s | AI=%s(%s%%) | نهایی=%s | %s",
-                         row["close"], tech, ai["decision"], ai["confidence"], signal, ai["reason"])
+                         price, tech, ai["decision"], ai["confidence"], signal, ai["reason"])
 
             pos = broker.state["position"]
-            price = float(row["close"])
             atr = float(row["atr"])
             if pos and signal == "SELL":
                 broker.sell_all(price, "signal_exit")
                 logging.info("پوزیشن مجازی بسته شد.")
             elif not pos and signal == "BUY" and atr > 0:
+                cash_balance = float(broker.state["balance"])
                 stop = price - STOP_ATR * atr
                 target = price + RR * (price - stop)
-                qty = position_size(balance, price, stop, RISK, MAX_POSITION)
+                qty = position_size(cash_balance, price, stop, RISK, MAX_POSITION)
                 if broker.buy(price, qty, stop, target, f"AI:{ai['confidence']} {ai['reason']}"):
                     logging.info("خرید مجازی: qty=%.8f stop=%.4f target=%.4f", qty, stop, target)
                 else:
