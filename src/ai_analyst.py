@@ -10,7 +10,6 @@ def analyze_market(symbol: str, timeframe: str, row, technical: str) -> dict:
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return {"decision": "HOLD", "confidence": 0, "reason": "GEMINI_API_KEY تنظیم نشده؛ برای ایمنی معامله‌ای انجام نشد."}
-
     model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     payload = {
@@ -37,18 +36,17 @@ def analyze_market(symbol: str, timeframe: str, row, technical: str) -> dict:
         confidence = int(result.get("confidence", 0))
         if decision not in {"BUY", "SELL", "HOLD"} or not 0 <= confidence <= 100:
             raise ValueError("AI returned invalid decision")
-        reason = str(result.get("reason", "بدون توضیح"))[:300]
-        return {"decision": decision, "confidence": confidence, "reason": reason}
+        return {"decision": decision, "confidence": confidence, "reason": str(result.get("reason", "بدون توضیح"))[:300]}
     except Exception as exc:
         return {"decision": "HOLD", "confidence": 0, "reason": f"خطای تحلیل AI؛ توقف امن: {type(exc).__name__}"}
 
 
-def combine_signal(technical: str, ai: dict) -> str:
-    """Require agreement for entries; AI/technical sell can close a paper position."""
-    decision = ai.get("decision", "HOLD")
-    confidence = ai.get("confidence", 0)
-    if technical == "BUY" and decision == "BUY" and confidence >= 65:
+def combine_signal(technical: str, ai: dict, ml: dict) -> str:
+    """Require three-way agreement and confidence for new paper entries."""
+    if (technical == "BUY" and ai.get("decision") == "BUY" and
+            ai.get("confidence", 0) >= 65 and ml.get("decision") == "BUY" and
+            ml.get("confidence", 0) >= 0.60):
         return "BUY"
-    if technical == "SELL" or decision == "SELL":
+    if technical == "SELL" or ai.get("decision") == "SELL" or ml.get("decision") == "SELL":
         return "SELL"
     return "HOLD"
