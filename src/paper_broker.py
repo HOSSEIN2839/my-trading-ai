@@ -46,13 +46,13 @@ class PaperBroker:
         with self.trades_path.open("a", newline="", encoding="utf-8") as f:
             csv.writer(f).writerow([datetime.now(timezone.utc).isoformat(), side, price, qty, fee, self.state["balance"], reason])
 
-    def buy(self, price: float, quantity: float, stop: float, target: float, reason: str) -> bool:
+    def buy(self, price: float, quantity: float, stop: float, target: float, reason: str, metadata: dict | None = None) -> bool:
         cost = price * quantity
         fee = cost * self.fee_rate
         if self.state["position"] is not None or quantity <= 0 or cost + fee > self.state["balance"]:
             return False
         self.state["balance"] -= cost + fee
-        self.state["position"] = {"entry": price, "quantity": quantity, "stop": stop, "target": target}
+        self.state["position"] = {"entry": price, "quantity": quantity, "stop": stop, "target": target, **(metadata or {})}
         self._log("BUY", price, quantity, fee, reason)
         self._save()
         return True
