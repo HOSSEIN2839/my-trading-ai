@@ -66,8 +66,9 @@ def main():
             ai = analyze_market(SYMBOL, TIMEFRAME, row, tech)
             ml = predict(row, model)
             signal = combine_signal(tech, ai, ml)
-            logging.info("قیمت=%.4f | تکنیکال=%s | Gemini=%s(%s%%) | ML=%s(%.0f%%) | نهایی=%s",
-                         price, tech, ai["decision"], ai["confidence"], ml["decision"], ml["confidence"] * 100, signal)
+            ai_status = f"Gemini={ai['decision']}({ai['confidence']}%)" if ai.get("enabled") else "Gemini=خاموش (اختیاری)"
+            logging.info("قیمت=%.4f | تکنیکال=%s | %s | ML=%s(%.0f%%) | نهایی=%s",
+                         price, tech, ai_status, ml["decision"], ml["confidence"] * 100, signal)
 
             pos = broker.state["position"]
             atr = float(row["atr"])
@@ -79,7 +80,7 @@ def main():
                 stop = price - STOP_ATR * atr
                 target = price + RR * (price - stop)
                 qty = position_size(cash_balance, price, stop, RISK, MAX_POSITION)
-                if broker.buy(price, qty, stop, target, f"Gemini:{ai['confidence']} ML:{ml['confidence']:.2f}"):
+                if broker.buy(price, qty, stop, target, f"AI_enabled:{ai.get('enabled', True)} ML:{ml['confidence']:.2f}"):
                     logging.info("خرید مجازی: qty=%.8f stop=%.4f target=%.4f", qty, stop, target)
                 else:
                     logging.info("خرید مجازی رد شد (موجودی/اندازه/پوزیشن).")
