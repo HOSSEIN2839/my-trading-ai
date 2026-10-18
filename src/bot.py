@@ -61,9 +61,16 @@ def main():
                 if position_before_exit:
                     exit_price = float(position_before_exit["stop"] if exit_reason == "stop_loss" else position_before_exit["target"])
                     exit_qty = float(position_before_exit["quantity"])
+                    entry_price = float(position_before_exit["entry"])
+                    realized_pnl = (exit_price - entry_price) * exit_qty - (entry_price * exit_qty + exit_price * exit_qty) * FEE
                     memory.record_trade(symbol=SYMBOL, side="SELL", price=exit_price, quantity=exit_qty,
-                                        fee=exit_price * exit_qty * FEE, reason=exit_reason,
-                                        details={"entry": position_before_exit["entry"], "source": "paper_broker"})
+                                        fee=exit_price * exit_qty * FEE, realized_pnl=realized_pnl, reason=exit_reason,
+                                        details={"entry": entry_price, "source": "paper_broker"})
+                    if position_before_exit.get("decision_id") is not None:
+                        memory.annotate_decision(int(position_before_exit["decision_id"]),
+                                                 {"exit_reason": exit_reason, "exit_price": exit_price,
+                                                  "realized_pnl_after_fees": realized_pnl,
+                                                  "return_pct_after_fees": realized_pnl / (entry_price * exit_qty)})
 
             equity = broker.equity(price)
             if daily_loss_limit_hit(float(broker.state["start_balance"]), equity, MAX_DAILY_LOSS):
@@ -75,7 +82,7 @@ def main():
             ai = analyze_market(SYMBOL, TIMEFRAME, row, tech)
             ml = predict(row, model)
             signal = combine_signal(tech, ai, ml)
-            memory.record_decision(
+            decision_id = memory.record_decision(
                 symbol=SYMBOL, timeframe=TIMEFRAME, decision=signal, price=price,
                 confidence=float(ml.get("confidence", 0.0)),
                 context={"technical": tech, "ml": ml, "ai_enabled": bool(ai.get("enabled", False)),
@@ -91,16 +98,24 @@ def main():
             if pos and signal == "SELL":
                 closed_position = dict(pos)
                 if broker.sell_all(price, "signal_exit"):
+                    exit_qty = float(closed_position["quantity"])
+                    entry_price = float(closed_position["entry"])
+                    realized_pnl = (price - entry_price) * exit_qty - (entry_price * exit_qty + price * exit_qty) * FEE
                     memory.record_trade(symbol=SYMBOL, side="SELL", price=price,
-                                        quantity=float(closed_position["quantity"]), fee=price * float(closed_position["quantity"]) * FEE,
-                                        reason="signal_exit", details={"entry": closed_position["entry"], "source": "paper_broker"})
+                                        quantity=exit_qty, fee=price * exit_qty * FEE, realized_pnl=realized_pnl,
+                                        reason="signal_exit", details={"entry": entry_price, "source": "paper_broker"})
+                    if closed_position.get("decision_id") is not None:
+                        memory.annotate_decision(int(closed_position["decision_id"]),
+                                                 {"exit_reason": "signal_exit", "exit_price": price,
+                                                  "realized_pnl_after_fees": realized_pnl,
+                                                  "return_pct_after_fees": realized_pnl / (entry_price * exit_qty)})
                 logging.info("پوزیشن مجازی بسته شد.")
             elif not pos and signal == "BUY" and atr > 0:
                 cash_balance = float(broker.state["balance"])
                 stop = price - STOP_ATR * atr
                 target = price + RR * (price - stop)
                 qty = position_size(cash_balance, price, stop, RISK, MAX_POSITION)
-                if broker.buy(price, qty, stop, target, f"AI_enabled:{ai.get('enabled', True)} ML:{ml['confidence']:.2f}"):
+                if broker.buy(price, qty, stop, target, f"AI_enabled:{ai.get('enabled', True)} ML:{ml['confidence']:.2f}", metadata={"decision_id": decision_id}):
                     memory.record_trade(symbol=SYMBOL, side="BUY", price=price, quantity=qty,
                                         fee=price * qty * FEE, reason="model_signal",
                                         details={"stop": stop, "target": target, "ml_confidence": ml["confidence"], "source": "paper_broker"})
