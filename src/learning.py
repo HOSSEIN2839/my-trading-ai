@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import joblib
+import numpy as np
 import pandas as pd
 
 FEATURES = ["close_return_1", "close_return_3", "ema_gap", "rsi", "atr_pct", "volume_change"]
@@ -39,7 +40,9 @@ def predict(row: pd.Series, model) -> dict:
     if frame.isna().any().any():
         return {"decision": "HOLD", "confidence": 0.0, "reason": "ویژگی‌های کافی برای پیش‌بینی وجود ندارد."}
     try:
-        probs = model.predict_proba(frame[FEATURES])[0]
+        probs = np.asarray(model.predict_proba(frame[FEATURES])[0], dtype=float)
+        if probs.ndim != 1 or len(probs) != len(model.classes_) or not np.isfinite(probs).all():
+            raise ValueError("Invalid model probability output")
         idx = int(probs.argmax())
         decision = str(model.classes_[idx])
         confidence = float(probs[idx])
