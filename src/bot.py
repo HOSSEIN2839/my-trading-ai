@@ -11,6 +11,7 @@ from src.ai_analyst import analyze_market, combine_signal
 from src.learning import load_model, make_features, predict, FEATURES
 from src.risk import position_size, daily_loss_limit_hit
 from src.paper_broker import PaperBroker
+from src.memory import TradingMemory
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -34,6 +35,7 @@ def main():
     if model is None:
         raise SystemExit("مدل یادگیری پیدا نشد. ابتدا دستور python -m src.train_model را اجرا کن.")
     broker = PaperBroker(float(os.getenv("INITIAL_BALANCE", "1000")), fee_rate=FEE)
+    memory = TradingMemory(os.getenv("MEMORY_DB_PATH", "data/memory.sqlite3"))
     last_candle = None
     logging.info("شروع ربات | %s | %s | حالت شبیه‌سازی؛ هیچ سفارش واقعی ارسال نمی‌شود", SYMBOL, TIMEFRAME)
 
@@ -52,9 +54,16 @@ def main():
             last_candle = candle_id
 
             price = float(row["close"])
+            position_before_exit = dict(broker.state["position"]) if broker.state["position"] else None
             exit_reason = broker.check_exit(float(row["low"]), float(row["high"]), price)
             if exit_reason:
                 logging.info("خروج شبیه‌سازی‌شده: %s", exit_reason)
+                if position_before_exit:
+                    exit_price = float(position_before_exit["stop"] if exit_reason == "stop_loss" else position_before_exit["target"])
+                    exit_qty = float(position_before_exit["quantity"])
+                    memory.record_trade(symbol=SYMBOL, side="SELL", price=exit_price, quantity=exit_qty,
+                                        fee=exit_price * exit_qty * FEE, reason=exit_reason,
+                                        details={"entry": position_before_exit["entry"], "source": "paper_broker"})
 
             equity = broker.equity(price)
             if daily_loss_limit_hit(float(broker.state["start_balance"]), equity, MAX_DAILY_LOSS):
@@ -66,6 +75,13 @@ def main():
             ai = analyze_market(SYMBOL, TIMEFRAME, row, tech)
             ml = predict(row, model)
             signal = combine_signal(tech, ai, ml)
+            memory.record_decision(
+                symbol=SYMBOL, timeframe=TIMEFRAME, decision=signal, price=price,
+                confidence=float(ml.get("confidence", 0.0)),
+                context={"technical": tech, "ml": ml, "ai_enabled": bool(ai.get("enabled", False)),
+                         "ai_decision": ai.get("decision", "HOLD"), "features": {k: row.get(k) for k in FEATURES}},
+                timestamp=row["timestamp"].isoformat() if hasattr(row["timestamp"], "isoformat") else str(row["timestamp"]),
+            )
             ai_status = f"Gemini={ai['decision']}({ai['confidence']}%)" if ai.get("enabled") else "Gemini=خاموش (اختیاری)"
             logging.info("قیمت=%.4f | تکنیکال=%s | %s | ML=%s(%.0f%%) | نهایی=%s",
                          price, tech, ai_status, ml["decision"], ml["confidence"] * 100, signal)
@@ -73,7 +89,11 @@ def main():
             pos = broker.state["position"]
             atr = float(row["atr"])
             if pos and signal == "SELL":
-                broker.sell_all(price, "signal_exit")
+                closed_position = dict(pos)
+                if broker.sell_all(price, "signal_exit"):
+                    memory.record_trade(symbol=SYMBOL, side="SELL", price=price,
+                                        quantity=float(closed_position["quantity"]), fee=price * float(closed_position["quantity"]) * FEE,
+                                        reason="signal_exit", details={"entry": closed_position["entry"], "source": "paper_broker"})
                 logging.info("پوزیشن مجازی بسته شد.")
             elif not pos and signal == "BUY" and atr > 0:
                 cash_balance = float(broker.state["balance"])
@@ -81,6 +101,9 @@ def main():
                 target = price + RR * (price - stop)
                 qty = position_size(cash_balance, price, stop, RISK, MAX_POSITION)
                 if broker.buy(price, qty, stop, target, f"AI_enabled:{ai.get('enabled', True)} ML:{ml['confidence']:.2f}"):
+                    memory.record_trade(symbol=SYMBOL, side="BUY", price=price, quantity=qty,
+                                        fee=price * qty * FEE, reason="model_signal",
+                                        details={"stop": stop, "target": target, "ml_confidence": ml["confidence"], "source": "paper_broker"})
                     logging.info("خرید مجازی: qty=%.8f stop=%.4f target=%.4f", qty, stop, target)
                 else:
                     logging.info("خرید مجازی رد شد (موجودی/اندازه/پوزیشن).")
