@@ -43,8 +43,6 @@ def test_model_artifact_must_match_configured_symbol_and_timeframe(tmp_path):
         "timeframe": "15m",
     }, path)
 
-    assert load_model(path, symbol="BTC/USDT", timeframe="15m") is model or load_model(
-        path, symbol="BTC/USDT", timeframe="15m"
-    ) is not None
+    assert load_model(path, symbol="BTC/USDT", timeframe="15m") is not None
     assert load_model(path, symbol="ETH/USDT", timeframe="15m") is None
     assert load_model(path, symbol="BTC/USDT", timeframe="1h") is None
