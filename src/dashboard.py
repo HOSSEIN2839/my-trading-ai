@@ -5,7 +5,6 @@ Run with: python -m src.dashboard
 """
 from __future__ import annotations
 
-import csv
 import json
 import os
 import sqlite3
@@ -109,7 +108,7 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
 
     @app.get("/api/decisions")
     def decisions():
-        limit = min(max(int(__import__("flask").request.args.get("limit", 25)), 1), 100)
+        limit = _request_limit()
         rows = _query_memory(
             memory_file,
             "SELECT id, timestamp, symbol, timeframe, decision, price, confidence, context_json, outcome_json "
