@@ -6,6 +6,10 @@ import pandas as pd
 
 
 def fetch_candles(symbol: str, timeframe: str, limit: int = 250) -> pd.DataFrame:
+    if not isinstance(limit, int) or limit < 3:
+        raise ValueError("limit must be an integer of at least 3")
+    if not symbol or not timeframe:
+        raise ValueError("symbol and timeframe are required")
     exchange = ccxt.binance({"enableRateLimit": True, "timeout": 20000})
     rows = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
     if not rows:
@@ -14,6 +18,17 @@ def fetch_candles(symbol: str, timeframe: str, limit: int = 250) -> pd.DataFrame
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
     for col in ("open", "high", "low", "close", "volume"):
         df[col] = pd.to_numeric(df[col], errors="raise")
+    numeric = df[["open", "high", "low", "close", "volume"]]
+    if not numeric.map(lambda value: pd.notna(value) and float("-inf") < float(value) < float("inf")).all().all():
+        raise RuntimeError("صرافی دادهٔ غیرعددی یا نامتناهی برگرداند.")
+    if (df[["open", "high", "low", "close"]] <= 0).any().any() or (df["volume"] < 0).any():
+        raise RuntimeError("قیمت یا حجم کندل نامعتبر است.")
+    if (df["high"] < df[["open", "close", "low"]].max(axis=1)).any():
+        raise RuntimeError("ساختار OHLC کندل نامعتبر است.")
+    if (df["low"] > df[["open", "close", "high"]].min(axis=1)).any():
+        raise RuntimeError("ساختار OHLC کندل نامعتبر است.")
+    if df["timestamp"].duplicated().any() or not df["timestamp"].is_monotonic_increasing:
+        raise RuntimeError("کندل‌ها تکراری یا خارج از ترتیب زمانی هستند.")
     return add_indicators(df)
 
 
