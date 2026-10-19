@@ -26,11 +26,11 @@
 
 1. The bot fetches candles and derives features from the last closed candle.
 2. It persists the market snapshot so monitoring and daily-risk accounting share the same price reference.
-3. The broker rolls the UTC daily-loss window using marked-to-market equity.
-4. The bot evaluates existing stop/target exits, checks the daily loss guard, and combines technical, ML, and optional AI signals.
+3. The broker rolls the UTC daily-loss window using marked-to-market equity and persists the last processed closed-candle ID to reduce duplicate decisions after restarts.
+4. The bot evaluates exits from the last closed candle, checks the daily loss guard, and combines technical, ML, and optional AI signals. Paper entries and signal exits use the next candle open, not the signal candle close.
 5. Approved paper actions go through `PaperBroker`; decisions and simulated trades are written to `TradingMemory`.
 6. The dashboard reads the persisted broker state and SQLite memory via `/api/status`, `/api/trades`, and `/api/decisions`.
-7. The historical backtest evaluates a signal at candle close and executes it at the next candle open; it applies fees and adverse slippage on both legs and resolves stop/target ambiguity conservatively.
+7. The historical backtest evaluates a signal at candle close and executes it at the next candle open; it applies fees and adverse slippage on both legs, includes costs in risk sizing, and resolves stop/target ambiguity conservatively.
 
 ## State and data contracts
 
@@ -52,7 +52,10 @@
 ## Current known limitations
 
 - The model does not yet retrain automatically from realized trade outcomes.
+- Model training purges the forward-label horizon at the chronological split, evaluates a held-out period, then trains the saved artifact on all labelled history. This evaluation is classification-based, not proof of net trading profitability.
+- Model artifacts are rejected if their feature list, symbol, or timeframe does not match the runtime configuration.
+- Cross-file persistence (JSON broker state, CSV log, and SQLite memory) is not yet a single atomic transaction; a process crash between writes can leave the ledger and memory temporarily inconsistent.
 - The first cost-aware backtest is a technical-signal baseline; the exact combined ML/AI runtime policy and walk-forward evaluation are not yet simulated.
 - The current historical data fetch is limited to one exchange API request and is not yet a paginated, gap-audited multi-year dataset.
-- The dashboard reports persisted runtime state; it does not control or guarantee that the bot process is running.
+- The dashboard reports persisted runtime state and the latest saved backtest report; it does not control or guarantee that the bot process is running.
 - When no market snapshot exists, equity can only be estimated using the entry price for an open position.
