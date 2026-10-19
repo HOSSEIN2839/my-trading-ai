@@ -128,15 +128,17 @@ def run_backtest(
                 execute_exit(open_price, timestamp, "signal")
             elif action == "BUY" and position is None:
                 atr = pending["atr"]
-                stop = open_price - stop_atr_multiplier * atr
-                target = open_price + reward_risk * (open_price - stop)
+                fill = open_price * (1 + slippage_rate)
+                stop = fill - stop_atr_multiplier * atr
+                target = fill + reward_risk * (fill - stop)
                 if atr > 0 and stop > 0 and cash > 0:
-                    # Size using a risk budget and a notional cap; reserve entry fee too.
+                    # Include adverse stop slippage and both-side fees in the risk budget.
                     risk_cash = cash * risk_fraction
-                    qty_risk = risk_cash / (open_price - stop)
-                    qty_cap = cash * max_position_fraction / (open_price * (1 + fee_rate))
+                    stop_fill = stop * (1 - slippage_rate)
+                    risk_per_unit = (fill - stop_fill) + fill * fee_rate + stop_fill * fee_rate
+                    qty_risk = risk_cash / risk_per_unit if risk_per_unit > 0 else 0.0
+                    qty_cap = cash * max_position_fraction / (fill * (1 + fee_rate))
                     qty = min(qty_risk, qty_cap)
-                    fill = open_price * (1 + slippage_rate)
                     entry_fee = fill * qty * fee_rate
                     total_cost = fill * qty + entry_fee
                     if qty > 0 and total_cost <= cash:
