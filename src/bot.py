@@ -34,7 +34,12 @@ def main():
     model = load_model()
     if model is None:
         raise SystemExit("مدل یادگیری پیدا نشد. ابتدا دستور python -m src.train_model را اجرا کن.")
-    broker = PaperBroker(float(os.getenv("INITIAL_BALANCE", "1000")), fee_rate=FEE)
+    broker = PaperBroker(
+        float(os.getenv("INITIAL_BALANCE", "1000")),
+        state_path=os.getenv("PAPER_STATE_PATH", "data/paper_state.json"),
+        trades_path=os.getenv("PAPER_TRADES_PATH", "data/trades.csv"),
+        fee_rate=FEE,
+    )
     memory = TradingMemory(os.getenv("MEMORY_DB_PATH", "data/memory.sqlite3"))
     last_candle = None
     logging.info("شروع ربات | %s | %s | حالت شبیه‌سازی؛ هیچ سفارش واقعی ارسال نمی‌شود", SYMBOL, TIMEFRAME)
