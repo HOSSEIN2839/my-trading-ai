@@ -13,7 +13,7 @@
 |---|---|---|
 | `src/market.py` | Fetch public candles and calculate deterministic indicators | Place orders or persist model decisions |
 | `src/learning.py` | Feature creation and model inference | Fetch market data or change broker state |
-| `src/pattern_mining.py` | Mine simple market-regime hypotheses and evaluate on a later holdout | Change bot decisions, promote patterns, or place orders |
+| `src/pattern_mining.py` | Mine single-feature and pairwise market-regime hypotheses on a later holdout | Change bot decisions, promote patterns, or place orders |
 | `src/backtest.py` | Cost-aware historical simulation and financial metrics | Send real orders or silently claim ML/live performance |
 | `src/ai_analyst.py` | Optional external analysis and signal combination | Become a required dependency for basic operation |
 | `src/risk.py` | Position sizing and daily-loss guard | Execute orders or call external services |
@@ -55,7 +55,7 @@
 ## Current known limitations
 
 - The model does not yet retrain automatically from realized trade outcomes.
-- `src/pattern_mining.py` discovers single-feature quantile regimes using a chronological holdout and purged forward labels. Its reports are exploratory only, use a bounded one-request candle sample, omit transaction costs and do not promote patterns into bot decisions. Multiple-pattern selection can overfit; independent walk-forward periods and net-return validation remain necessary.
+- `src/pattern_mining.py` discovers single-feature and pairwise quantile regimes using a chronological holdout and purged forward labels. Its reports are exploratory only, use a bounded one-request candle sample, omit transaction costs and do not promote patterns into bot decisions. Multiple-pattern selection can overfit; independent walk-forward periods and net-return validation remain necessary.
 - Model training purges the forward-label horizon at the chronological split, evaluates a held-out period, then trains the saved artifact on all labelled history. This evaluation is classification-based, not proof of net trading profitability.
 - Model artifacts are rejected if their feature list, symbol, or timeframe does not match the runtime configuration.
 - Cross-file persistence (JSON broker state, CSV log, and SQLite memory) is not yet a single atomic transaction; a process crash between writes can leave the ledger and memory temporarily inconsistent.
