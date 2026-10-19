@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import joblib
+import numpy as np
 import pandas as pd
 
+from src.paths import project_path
+
 FEATURES = ["close_return_1", "close_return_3", "ema_gap", "rsi", "atr_pct", "volume_change"]
-DEFAULT_MODEL_PATH = Path("data/model.joblib")
+DEFAULT_MODEL_PATH = project_path(os.getenv("MODEL_PATH", "data/model.joblib"))
 
 
 def make_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -20,12 +24,17 @@ def make_features(df: pd.DataFrame) -> pd.DataFrame:
     return out.replace([float("inf"), float("-inf")], float("nan"))
 
 
-def load_model(path: Path = DEFAULT_MODEL_PATH):
+def load_model(path: Path | None = None, *, symbol: str | None = None, timeframe: str | None = None):
+    path = project_path(path or os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
     if not path.exists():
         return None
     try:
         payload = joblib.load(path)
-        if payload.get("features") != FEATURES:
+        if not isinstance(payload, dict) or payload.get("features") != FEATURES:
+            return None
+        if symbol is not None and payload.get("symbol") != symbol:
+            return None
+        if timeframe is not None and payload.get("timeframe") != timeframe:
             return None
         return payload["model"]
     except Exception:
@@ -39,7 +48,9 @@ def predict(row: pd.Series, model) -> dict:
     if frame.isna().any().any():
         return {"decision": "HOLD", "confidence": 0.0, "reason": "ویژگی‌های کافی برای پیش‌بینی وجود ندارد."}
     try:
-        probs = model.predict_proba(frame[FEATURES])[0]
+        probs = np.asarray(model.predict_proba(frame[FEATURES])[0], dtype=float)
+        if probs.ndim != 1 or len(probs) != len(model.classes_) or not np.isfinite(probs).all():
+            raise ValueError("Invalid model probability output")
         idx = int(probs.argmax())
         decision = str(model.classes_[idx])
         confidence = float(probs[idx])

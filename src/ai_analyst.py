@@ -1,4 +1,4 @@
-"""Gemini market-analysis gate. The model cannot bypass risk rules."""
+"""Optional Gemini market-analysis gate for paper trading."""
 from __future__ import annotations
 
 import json
@@ -7,9 +7,14 @@ import requests
 
 
 def analyze_market(symbol: str, timeframe: str, row, technical: str) -> dict:
+    """Return an optional AI opinion. No API key means the local system can still operate."""
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
-        return {"decision": "HOLD", "confidence": 0, "reason": "GEMINI_API_KEY تنظیم نشده؛ برای ایمنی معامله‌ای انجام نشد."}
+        return {
+            "enabled": False, "decision": "HOLD", "confidence": 0,
+            "reason": "Gemini تنظیم نشده؛ تصمیم با مدل محلی و سیگنال تکنیکال گرفته می‌شود.",
+        }
+
     model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     payload = {
@@ -28,7 +33,7 @@ def analyze_market(symbol: str, timeframe: str, row, technical: str) -> dict:
         "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
     }
     try:
-        response = requests.post(url, params={"key": api_key}, json=payload, timeout=25)
+        response = requests.post(url, headers={"x-goog-api-key": api_key}, json=payload, timeout=25)
         response.raise_for_status()
         body = response.json()["candidates"][0]["content"]["parts"][0]["text"]
         result = json.loads(body)
@@ -36,17 +41,36 @@ def analyze_market(symbol: str, timeframe: str, row, technical: str) -> dict:
         confidence = int(result.get("confidence", 0))
         if decision not in {"BUY", "SELL", "HOLD"} or not 0 <= confidence <= 100:
             raise ValueError("AI returned invalid decision")
-        return {"decision": decision, "confidence": confidence, "reason": str(result.get("reason", "بدون توضیح"))[:300]}
+        return {
+            "enabled": True, "decision": decision, "confidence": confidence,
+            "reason": str(result.get("reason", "بدون توضیح"))[:300],
+        }
     except Exception as exc:
-        return {"decision": "HOLD", "confidence": 0, "reason": f"خطای تحلیل AI؛ توقف امن: {type(exc).__name__}"}
+        # If configured AI fails, fail closed rather than silently bypassing it.
+        return {
+            "enabled": True, "decision": "HOLD", "confidence": 0,
+            "reason": f"خطای تحلیل AI؛ توقف امن: {type(exc).__name__}",
+        }
 
 
 def combine_signal(technical: str, ai: dict, ml: dict) -> str:
-    """Require three-way agreement and confidence for new paper entries."""
-    if (technical == "BUY" and ai.get("decision") == "BUY" and
-            ai.get("confidence", 0) >= 65 and ml.get("decision") == "BUY" and
-            ml.get("confidence", 0) >= 0.60):
-        return "BUY"
-    if technical == "SELL" or ai.get("decision") == "SELL" or ml.get("decision") == "SELL":
+    """Use local technical+ML agreement when Gemini is absent; otherwise require all three."""
+    ml_decision = ml.get("decision", "HOLD")
+    ml_confidence = float(ml.get("confidence", 0))
+    ai_enabled = bool(ai.get("enabled", True))
+
+    if technical == "SELL" or ml_decision == "SELL" or (
+        ai_enabled and ai.get("decision") == "SELL"
+    ):
         return "SELL"
+
+    local_buy = technical == "BUY" and ml_decision == "BUY" and ml_confidence >= 0.60
+    if not local_buy:
+        return "HOLD"
+
+    if not ai_enabled:
+        return "BUY"
+
+    if ai.get("decision") == "BUY" and int(ai.get("confidence", 0)) >= 65:
+        return "BUY"
     return "HOLD"

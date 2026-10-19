@@ -1,5 +1,6 @@
+import joblib
 import pandas as pd
-from src.learning import FEATURES, make_features, predict
+from src.learning import FEATURES, make_features, predict, load_model
 
 
 class DummyModel:
@@ -29,3 +30,19 @@ def test_model_prediction_uses_confidence_threshold():
     })
     assert predict(row, DummyModel())["decision"] == "BUY"
     assert predict(row, None)["decision"] == "HOLD"
+
+
+
+def test_model_artifact_must_match_configured_symbol_and_timeframe(tmp_path):
+    path = tmp_path / "model.joblib"
+    model = DummyModel()
+    joblib.dump({
+        "model": model,
+        "features": FEATURES,
+        "symbol": "BTC/USDT",
+        "timeframe": "15m",
+    }, path)
+
+    assert load_model(path, symbol="BTC/USDT", timeframe="15m") is not None
+    assert load_model(path, symbol="ETH/USDT", timeframe="15m") is None
+    assert load_model(path, symbol="BTC/USDT", timeframe="1h") is None
