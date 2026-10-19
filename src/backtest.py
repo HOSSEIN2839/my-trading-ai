@@ -33,6 +33,7 @@ def _valid_candles(candles: pd.DataFrame) -> pd.DataFrame:
     timestamps = pd.to_datetime(frame["timestamp"], utc=True, errors="coerce")
     if timestamps.isna().any():
         raise ValueError("candles contain invalid timestamps")
+    frame["timestamp"] = timestamps
     if not timestamps.is_monotonic_increasing:
         raise ValueError("candles must be ordered by ascending timestamp")
     if (frame[["open", "high", "low", "close"]] <= 0).any().any():
