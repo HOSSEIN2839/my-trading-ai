@@ -93,7 +93,7 @@ def test_integration_diagnostics_report_ready_components(tmp_path, monkeypatch):
     with TradingMemory(memory_path):
         pass
     trades_path = tmp_path / "trades.csv"
-    trades_path.write_text("time_utc,side,price,quantity,fee,balance,reason\\n", encoding="utf-8")
+    trades_path.write_text("time_utc,side,price,quantity,fee,balance,reason\n", encoding="utf-8")
     model_path = tmp_path / "model.joblib"
     model_path.write_bytes(b"test-artifact")
     monkeypatch.setenv("MODE", "paper")
