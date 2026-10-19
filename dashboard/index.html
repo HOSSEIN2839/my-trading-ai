@@ -80,6 +80,11 @@
     <div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>بازه</th><th>تصمیم</th><th>قیمت</th><th>اطمینان ML</th><th>نتیجه</th></tr></thead><tbody id="decisions"><tr><td class="empty-row" colspan="7">در انتظار داده</td></tr></tbody></table></div>
   </section>
 
+  <section class="section panel" id="integration">
+    <div class="section-head"><div><h2 class="section-title">سلامت و یکپارچگی سیستم</h2><div class="section-note">بررسی فقط‌خواندنی فایل‌های حساب، حافظه، دفتر معاملات و مدل</div></div><span class="tag" id="integration-status">در حال بررسی</span></div>
+    <div class="memory-grid" id="integration-checks"><div class="memory-item"><div class="memory-label">در حال بررسی اجزای سیستم…</div></div></div>
+  </section>
+
   <section class="section panel" id="backtest">
     <div class="section-head"><div><h2 class="section-title">ارزیابی بک‌تست</h2><div class="section-note">گزارش آخرین اجرای ذخیره‌شده؛ خط‌مبنای تکنیکال</div></div><span class="tag" id="backtest-status">گزارش موجود نیست</span></div>
     <div class="backtest-grid">
@@ -126,6 +131,21 @@ function renderMemory(mem){
  const map=[["mem-decisions","decisions"],["mem-trades","trades"],["mem-patterns","patterns"],["mem-evaluations","evaluations"]];
  map.forEach(([id,key])=>$(id).textContent=fmt(mem?.[key]??0,0));
 }
+function renderIntegration(data){
+ const host=$("integration-checks");host.replaceChildren();
+ const status=data?.overall||"error";
+ $("integration-status").textContent=status==="ok"?"همهٔ اجزا آماده":status==="warning"?"نیازمند راه‌اندازی":"خطای یکپارچگی";
+ $("integration-status").className=status==="ok"?"tag green":status==="warning"?"tag warn":"tag";
+ (data?.checks||[]).forEach(item=>{
+  const card=document.createElement("div");card.className="memory-item";
+  const head=document.createElement("div");head.style.display="flex";head.style.alignItems="center";head.style.justifyContent="space-between";head.style.gap="8px";
+  const label=document.createElement("div");label.className="memory-label";label.style.marginTop="0";label.textContent=item.label;
+  const badge=document.createElement("span");badge.className="tag "+(item.status==="ok"?"green":item.status==="error"?"warn":"");badge.textContent=item.status==="ok"?"آماده":item.status==="error"?"خطا":"ایجاد نشده";
+  head.append(label,badge);
+  const detail=document.createElement("div");detail.style.fontSize="11px";detail.style.marginTop="9px";detail.style.color=item.status==="ok"?"#aab7c5":item.status==="error"?"var(--red)":"var(--amber)";detail.textContent=item.detail;
+  card.append(head,detail);host.appendChild(card);
+ });
+}
 function renderBacktest(data){
  const metrics=data?.metrics||{},available=Boolean(data?.available&&Object.keys(metrics).length);
  $("backtest-status").textContent=available?"گزارش آماده":"گزارش موجود نیست";$("backtest-status").className=available?"tag green":"tag";
@@ -163,10 +183,11 @@ async function getJson(url){const response=await fetch(url,{cache:"no-store",hea
 async function refresh(){
  if(refreshBusy)return;refreshBusy=true;const button=$("refresh");button.disabled=true;
  try{
-  const [health,status,trades,decisions,backtest]=await Promise.all(["/api/health","/api/status","/api/trades?limit=12","/api/decisions?limit=12","/api/backtest"].map(getJson));
+  const [health,status,trades,decisions,backtest,integration]=await Promise.all(["/api/health","/api/status","/api/trades?limit=12","/api/decisions?limit=12","/api/backtest","/api/integration"].map(getJson));
+  if(!health?.ok||health?.read_only!==true)throw new Error("API health contract mismatch");
   setConnection("ok",status.state_available?"API متصل":"API فعال · در انتظار داده");
   if(!status.state_available)showToast("API در دسترس است، اما هنوز فایل وضعیت حساب ساخته نشده است.");
-  renderStatus(status);renderBacktest(backtest);
+  renderStatus(status);renderBacktest(backtest);renderIntegration(integration);
   fillRows("trades",trades.items,8,"هنوز معامله‌ای در حافظه ثبت نشده است.");fillRows("decisions",decisions.items,7,"هنوز تصمیمی در حافظه ثبت نشده است.");
   $("trades-tag").textContent=fmt(trades.items?.length||0,0)+" رکورد";$("decisions-tag").textContent=fmt(decisions.items?.length||0,0)+" رکورد";
   $("updated").textContent="آخرین بررسی: "+new Date().toLocaleTimeString("fa-IR");
