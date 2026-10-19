@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from src.market import add_indicators, technical_signal
+from src.paths import project_path
 
 
 SignalFunction = Callable[[pd.Series], str]
@@ -221,7 +222,7 @@ def main() -> None:
     candles["timestamp"] = pd.to_datetime(candles["timestamp"], unit="ms", utc=True)
     candles = add_indicators(candles).iloc[:-1].reset_index(drop=True)  # exclude potentially open candle
     result = run_backtest(candles)
-    output = Path("data/backtest_report.json")
+    output = project_path("data/backtest_report.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, default=str, allow_nan=False), encoding="utf-8")
     print(json.dumps(result["metrics"], indent=2, allow_nan=False))
