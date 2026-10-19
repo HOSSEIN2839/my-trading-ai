@@ -14,9 +14,10 @@ from typing import Any
 from flask import Flask, jsonify, request, send_from_directory
 from dotenv import load_dotenv
 
+from src.paths import PROJECT_ROOT, project_path
+
 load_dotenv()
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DASHBOARD_DIR = PROJECT_ROOT / "dashboard"
 
 
@@ -51,11 +52,9 @@ def _request_limit() -> int:
 def create_app(state_path: str | Path | None = None, memory_path: str | Path | None = None) -> Flask:
     app = Flask(__name__, static_folder=None)
     state_file = Path(state_path or os.getenv("PAPER_STATE_PATH", "data/paper_state.json"))
-    if not state_file.is_absolute():
-        state_file = PROJECT_ROOT / state_file
+    state_file = project_path(state_file)
     memory_file = Path(memory_path or os.getenv("MEMORY_DB_PATH", "data/memory.sqlite3"))
-    if not memory_file.is_absolute():
-        memory_file = PROJECT_ROOT / memory_file
+    memory_file = project_path(memory_file)
 
     @app.get("/")
     def dashboard():
@@ -112,8 +111,7 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
     @app.get("/api/backtest")
     def backtest():
         report_path = Path(os.getenv("BACKTEST_REPORT_PATH", "data/backtest_report.json"))
-        if not report_path.is_absolute():
-            report_path = PROJECT_ROOT / report_path
+        report_path = project_path(report_path)
         report = _read_json(report_path)
         metrics = report.get("metrics", {})
         return jsonify({
