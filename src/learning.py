@@ -7,8 +7,10 @@ import joblib
 import numpy as np
 import pandas as pd
 
+from src.paths import project_path
+
 FEATURES = ["close_return_1", "close_return_3", "ema_gap", "rsi", "atr_pct", "volume_change"]
-DEFAULT_MODEL_PATH = Path(os.getenv("MODEL_PATH", "data/model.joblib"))
+DEFAULT_MODEL_PATH = project_path(os.getenv("MODEL_PATH", "data/model.joblib"))
 
 
 def make_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -23,7 +25,7 @@ def make_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_model(path: Path | None = None, *, symbol: str | None = None, timeframe: str | None = None):
-    path = Path(path or os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
+    path = project_path(path or os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
     if not path.exists():
         return None
     try:
