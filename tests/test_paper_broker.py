@@ -69,6 +69,28 @@ def test_broker_rejects_non_finite_orders_and_market_prices(tmp_path):
         broker.equity(float("inf"))
 
 
+def test_buy_rejects_metadata_that_overrides_accounting_fields(tmp_path):
+    broker = make_broker(tmp_path)
+    original_balance = broker.state["balance"]
+
+    assert not broker.buy(
+        100, 1, 90, 120, "metadata override",
+        metadata={"quantity": 1000},
+    )
+    assert broker.state["balance"] == original_balance
+    assert broker.state["position"] is None
+
+
+def test_buy_rejects_non_json_or_non_finite_metadata_before_mutation(tmp_path):
+    broker = make_broker(tmp_path)
+    original_balance = broker.state["balance"]
+
+    assert not broker.buy(100, 1, 90, 120, "nan metadata", metadata={"confidence": float("nan")})
+    assert not broker.buy(100, 1, 90, 120, "object metadata", metadata={"bad": object()})
+    assert broker.state["balance"] == original_balance
+    assert broker.state["position"] is None
+
+
 def test_broker_rejects_corrupt_persisted_position(tmp_path):
     state_path = tmp_path / "paper_state.json"
     state_path.write_text(
