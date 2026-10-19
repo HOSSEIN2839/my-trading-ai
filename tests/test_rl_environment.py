@@ -103,6 +103,8 @@ def test_reset_restores_initial_account_and_position():
 )
 def test_environment_rejects_invalid_ohlc_structure(column, value):
     invalid = candles()
+    if value == float("inf"):
+        invalid[column] = invalid[column].astype(float)
     invalid.loc[0, column] = value
     with pytest.raises(ValueError):
         PaperTradingEnv(invalid)
