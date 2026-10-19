@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
+from src.paths import project_path
+
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -24,7 +26,7 @@ class TradingMemory:
     """Durable, local memory for decisions, trades, patterns, evaluations and models."""
 
     def __init__(self, db_path: str | Path = "data/memory.sqlite3") -> None:
-        self.db_path = Path(db_path)
+        self.db_path = Path(":memory:") if str(db_path) == ":memory:" else project_path(db_path)
         if str(self.db_path) != ":memory:":
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.db_path), timeout=15)
