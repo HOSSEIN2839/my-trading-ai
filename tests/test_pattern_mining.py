@@ -34,6 +34,8 @@ def test_pattern_mining_returns_auditable_chronological_report():
     assert report["train_rows"] + report["purged_rows"] + report["test_rows"] <= report["complete_rows"]
     assert report["purged_rows"] == 3
     assert report["patterns"]
+    assert report["single_feature_candidate_count"] > 0
+    assert report["interaction_candidate_count"] > 0
     assert len(report["patterns"]) <= 10
     for pattern in report["patterns"]:
         assert pattern["direction"] in {"BUY", "SELL"}
