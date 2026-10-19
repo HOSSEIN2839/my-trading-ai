@@ -141,7 +141,7 @@ function renderIntegration(data){
   const card=document.createElement("div");card.className="memory-item";
   const head=document.createElement("div");head.style.display="flex";head.style.alignItems="center";head.style.justifyContent="space-between";head.style.gap="8px";
   const label=document.createElement("div");label.className="memory-label";label.style.marginTop="0";label.textContent=item.label;
-  const badge=document.createElement("span");badge.className="tag "+(item.status==="ok"?"green":item.status==="error"?"warn":"");badge.textContent=item.status==="ok"?"آماده":item.status==="error"?"خطا":"ایجاد نشده";
+  const badge=document.createElement("span");badge.className="tag "+(item.status==="ok"?"green":(item.status==="error"||item.status==="warning")?"warn":"");badge.textContent=item.status==="ok"?"آماده":item.status==="error"?"خطا":item.status==="warning"?"ناهماهنگ":"ایجاد نشده";
   head.append(label,badge);
   const detail=document.createElement("div");detail.style.fontSize="11px";detail.style.marginTop="9px";detail.style.color=item.status==="ok"?"#aab7c5":item.status==="error"?"var(--red)":"var(--amber)";detail.textContent=item.detail;
   card.append(head,detail);host.appendChild(card);
