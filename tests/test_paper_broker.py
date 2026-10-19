@@ -57,3 +57,24 @@ def test_sell_all_clears_position_and_accounts_for_fee(tmp_path):
     assert broker.state["position"] is None
     assert round(broker.state["balance"], 4) == 1009.79
     assert not broker.sell_all(110, "already closed")
+
+
+def test_broker_rejects_non_finite_orders_and_market_prices(tmp_path):
+    broker = make_broker(tmp_path)
+    assert not broker.buy(float("nan"), 1, 90, 120, "nan price")
+    assert not broker.buy(100, float("inf"), 90, 120, "infinite quantity")
+    with pytest.raises(ValueError):
+        broker.record_market_price(float("nan"), "BTC/USDT", "15m")
+    with pytest.raises(ValueError):
+        broker.equity(float("inf"))
+
+
+def test_broker_rejects_corrupt_persisted_position(tmp_path):
+    state_path = tmp_path / "paper_state.json"
+    state_path.write_text(
+        '{"balance": 1000, "start_balance": 1000, "day": "2026-10-18", '
+        '"position": {"entry": 100, "quantity": NaN, "stop": 90, "target": 120}}',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError):
+        PaperBroker(1000, state_path=state_path, trades_path=tmp_path / "trades.csv")
