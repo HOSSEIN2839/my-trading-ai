@@ -49,7 +49,7 @@ def main():
         fee_rate=FEE,
     )
     memory = TradingMemory(os.getenv("MEMORY_DB_PATH", "data/memory.sqlite3"))
-    last_candle = None
+    last_candle = broker.state.get("last_processed_candle")
     logging.info("شروع ربات | %s | %s | حالت شبیه‌سازی؛ هیچ سفارش واقعی ارسال نمی‌شود", SYMBOL, TIMEFRAME)
 
     while True:
@@ -68,11 +68,6 @@ def main():
             # including an open position valued at the latest closed candle.
             broker.roll_day(price)
             candle_id = str(row["timestamp"])
-            if candle_id == last_candle:
-                time.sleep(POLL_SECONDS)
-                continue
-            last_candle = candle_id
-
             position_before_exit = dict(broker.state["position"]) if broker.state["position"] else None
             exit_reason = broker.check_exit(float(row["low"]), float(row["high"]), price)
             if exit_reason:
@@ -91,9 +86,25 @@ def main():
                                                   "realized_pnl_after_fees": realized_pnl,
                                                   "return_pct_after_fees": realized_pnl / (entry_price * exit_qty)})
 
+            # Exit checks run even for an already-seen candle so a position left open
+            # during downtime can still be closed if its latest completed candle hit a stop.
+            if candle_id == last_candle:
+                time.sleep(POLL_SECONDS)
+                continue
+            if last_candle is None:
+                # On first launch, do not retroactively fill a signal at a candle open
+                # that may already be minutes old. Begin entries from the next cycle.
+                broker.mark_candle_processed(candle_id)
+                last_candle = candle_id
+                logging.info("شروع امن: کندل فعلی ثبت شد؛ تصمیم جدید از کندل بسته‌شدهٔ بعدی.")
+                time.sleep(POLL_SECONDS)
+                continue
+
             equity = broker.equity(price)
             if daily_loss_limit_hit(float(broker.state["start_balance"]), equity, MAX_DAILY_LOSS):
                 logging.warning("حد زیان روزانه فعال شد؛ تا روز بعد معامله جدید انجام نمی‌شود.")
+                broker.mark_candle_processed(candle_id)
+                last_candle = candle_id
                 time.sleep(POLL_SECONDS)
                 continue
 
@@ -120,8 +131,8 @@ def main():
                     exit_qty = float(closed_position["quantity"])
                     entry_price = float(closed_position["entry"])
                     realized_pnl = (execution_price - entry_price) * exit_qty - (entry_price * exit_qty + execution_price * exit_qty) * FEE
-                    memory.record_trade(symbol=SYMBOL, side="SELL", price=price,
-                                        quantity=exit_qty, fee=price * exit_qty * FEE, realized_pnl=realized_pnl,
+                    memory.record_trade(symbol=SYMBOL, side="SELL", price=execution_price,
+                                        quantity=exit_qty, fee=execution_price * exit_qty * FEE, realized_pnl=realized_pnl,
                                         reason="signal_exit", details={"entry": entry_price, "source": "paper_broker"})
                     if closed_position.get("decision_id") is not None:
                         memory.annotate_decision(int(closed_position["decision_id"]),
