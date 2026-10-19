@@ -41,7 +41,7 @@
   <section class="metrics" aria-label="شاخص‌های حساب">
     <article class="metric-card"><div class="metric-top"><span class="metric-label">ارزش کل حساب</span><span class="metric-symbol">◈</span></div><div class="metric-value" id="equity">—</div><div class="metric-foot" id="equity-foot">ارزش نقد و دارایی مجازی</div></article>
     <article class="metric-card"><div class="metric-top"><span class="metric-label">موجودی نقدی</span><span class="metric-symbol">◉</span></div><div class="metric-value" id="balance">—</div><div class="metric-foot">ماندهٔ حساب شبیه‌سازی‌شده</div></article>
-    <article class="metric-card"><div class="metric-top"><span class="metric-label">سود / زیان حساب</span><span class="metric-symbol">↗</span></div><div class="metric-value" id="account-pnl">—</div><div class="metric-foot" id="account-pnl-foot">نسبت به موجودی شروع</div></article>
+    <article class="metric-card"><div class="metric-top"><span class="metric-label">سود / زیان روزانه</span><span class="metric-symbol">↗</span></div><div class="metric-value" id="account-pnl">—</div><div class="metric-foot" id="account-pnl-foot">نسبت به مبنای ابتدای روز</div></article>
     <article class="metric-card"><div class="metric-top"><span class="metric-label">تصمیم‌های ثبت‌شده</span><span class="metric-symbol">≋</span></div><div class="metric-value" id="decision-count">—</div><div class="metric-foot" id="trade-count">معاملات ثبت‌شده: —</div></article>
   </section>
 
@@ -172,7 +172,7 @@ function renderEquityChart(points){
 function renderStatus(status){
  $("balance").textContent=money(status.balance);$("equity").textContent=money(status.equity);
  const pnl=Number(status.equity)-Number(status.start_balance),pct=Number(status.start_balance)>0?pnl/Number(status.start_balance)*100:NaN;
- $("account-pnl").textContent=Number.isFinite(pnl)?(pnl>0?"+":"")+fmt(pnl,2)+" USDT":"—";$("account-pnl-foot").textContent=Number.isFinite(pct)?"تغییر از شروع: "+(pct>0?"+":"")+fmt(pct,2)+"٪":"نسبت به موجودی شروع";
+ $("account-pnl").textContent=Number.isFinite(pnl)?(pnl>0?"+":"")+fmt(pnl,2)+" USDT":"—";$("account-pnl-foot").textContent=Number.isFinite(pct)?"تغییر نسبت به مبنای امروز: "+(pct>0?"+":"")+fmt(pct,2)+"٪":"نسبت به موجودی شروع";
  setTone($("account-pnl"),pnl);
  $("decision-count").textContent=fmt(status.memory?.decisions??0,0);$("trade-count").textContent="معاملات ثبت‌شده: "+fmt(status.memory?.trades??0,0);
  const m=status.market||{};$("price").textContent=m.price?fmt(m.price,6):"—";$("market-pair").textContent=m.symbol||"بازار نامشخص";$("timeframe").textContent=m.timeframe||"—";$("market-time").textContent=dateFmt(m.timestamp);
