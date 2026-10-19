@@ -89,6 +89,7 @@ def test_backtest_rejects_unordered_timestamps_and_non_finite_values():
         (100, 101, 99, 100, "HOLD"),
         (100, 101, 99, 100, "HOLD"),
     ])
+    frame["close"] = frame["close"].astype(float)
     frame.loc[1, "close"] = float("inf")
     with pytest.raises(ValueError, match="non-finite"):
         run_backtest(frame, signal)
