@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import joblib
 import numpy as np
 import pandas as pd
 
 FEATURES = ["close_return_1", "close_return_3", "ema_gap", "rsi", "atr_pct", "volume_change"]
-DEFAULT_MODEL_PATH = Path("data/model.joblib")
+DEFAULT_MODEL_PATH = Path(os.getenv("MODEL_PATH", "data/model.joblib"))
 
 
 def make_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -21,12 +22,17 @@ def make_features(df: pd.DataFrame) -> pd.DataFrame:
     return out.replace([float("inf"), float("-inf")], float("nan"))
 
 
-def load_model(path: Path = DEFAULT_MODEL_PATH):
+def load_model(path: Path = DEFAULT_MODEL_PATH, *, symbol: str | None = None, timeframe: str | None = None):
+    path = Path(path)
     if not path.exists():
         return None
     try:
         payload = joblib.load(path)
-        if payload.get("features") != FEATURES:
+        if not isinstance(payload, dict) or payload.get("features") != FEATURES:
+            return None
+        if symbol is not None and payload.get("symbol") != symbol:
+            return None
+        if timeframe is not None and payload.get("timeframe") != timeframe:
             return None
         return payload["model"]
     except Exception:
