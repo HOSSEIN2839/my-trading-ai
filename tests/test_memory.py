@@ -52,3 +52,19 @@ def test_memory_requires_positive_trade_size(tmp_path):
     with TradingMemory(tmp_path / "memory.sqlite3") as memory:
         with pytest.raises(ValueError):
             memory.record_trade(symbol="BTC/USDT", side="BUY", price=0, quantity=1)
+
+
+def test_memory_rejects_non_finite_decision_values(tmp_path):
+    with TradingMemory(tmp_path / "memory.sqlite3") as memory:
+        with pytest.raises(ValueError):
+            memory.record_decision(symbol="BTC/USDT", timeframe="15m", decision="BUY", price=float("nan"))
+        with pytest.raises(ValueError):
+            memory.record_decision(symbol="BTC/USDT", timeframe="15m", decision="BUY", confidence=float("inf"))
+
+
+def test_memory_rejects_non_finite_trade_values(tmp_path):
+    with TradingMemory(tmp_path / "memory.sqlite3") as memory:
+        with pytest.raises(ValueError):
+            memory.record_trade(symbol="BTC/USDT", side="BUY", price=100, quantity=1, fee=float("nan"))
+        with pytest.raises(ValueError):
+            memory.record_trade(symbol="BTC/USDT", side="SELL", price=100, quantity=1, realized_pnl=float("inf"))
