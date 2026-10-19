@@ -1,112 +1,181 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <title>مرکز کنترل | My Trading AI</title>
-  <style>
-    :root{font-family:Tahoma,"Segoe UI",sans-serif;color:#e8edf7;background:#0b1020;font-synthesis:none}
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top right,#192747 0,transparent 40%),#0b1020;min-height:100vh}
-    .shell{max-width:1200px;margin:auto;padding:28px 18px 44px}.top{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:26px}
-    .brand{display:flex;gap:13px;align-items:center}.mark{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:#7c5cff;color:white;font-size:24px;font-weight:800;box-shadow:0 8px 28px #7c5cfc33}
-    h1{font-size:22px;margin:0 0 6px}p{margin:0;color:#9ba9c3;font-size:13px;line-height:1.8}
-    .status{display:flex;align-items:center;gap:9px;background:#111a2e;border:1px solid #293650;border-radius:999px;padding:10px 14px;font-size:12px}
-    .dot{width:8px;height:8px;border-radius:50%;background:#f0b44d;box-shadow:0 0 0 4px #f0b44d18}.dot.ok{background:#38d39f;box-shadow:0 0 0 4px #38d39f18}
-    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.card{background:linear-gradient(145deg,#151e32,#111827);border:1px solid #27334a;border-radius:18px;padding:19px;min-width:0}
-    .metric-label{font-size:12px;color:#9ba9c3;margin-bottom:13px}.metric{font-size:25px;font-weight:750;letter-spacing:-.4px;overflow-wrap:anywhere}.sub{font-size:11px;color:#8593ad;margin-top:9px}
-    .section{margin-top:18px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}.section-head h2{font-size:15px;margin:0}.tag{font-size:11px;border-radius:8px;padding:6px 9px;background:#192641;color:#aebdf8}
-    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}.position{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #27334a}.position:last-child{border:0}.key{color:#94a2bc;font-size:12px}.value{font-size:13px;font-weight:650;overflow-wrap:anywhere}
-    .table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}th{text-align:right;color:#8f9eb9;font-weight:500;padding:12px 10px;border-bottom:1px solid #2b3650}td{padding:13px 10px;border-bottom:1px solid #202b40}tbody tr:last-child td{border-bottom:0}.pill{display:inline-block;padding:5px 8px;border-radius:7px;background:#27334a;color:#cbd5e8;font-size:11px}.buy{background:#113d34;color:#65e0b3}.sell{background:#44272e;color:#ff9eaa}.hold{background:#3c3420;color:#f1ce7b}
-    .empty{text-align:center;color:#8795af;padding:24px 10px;font-size:12px}.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:20px;color:#74829c;font-size:11px}
-    button{font:inherit;border:1px solid #34425e;background:#172238;color:#dce5f7;border-radius:10px;padding:9px 12px;cursor:pointer}button:hover{background:#22314d}
-    @media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}}@media(max-width:480px){.shell{padding:20px 12px}.metric{font-size:21px}.card{padding:15px}.top{align-items:flex-start}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0d12">
+<title>My Trading AI | مرکز کنترل</title>
+<style>
+:root{font-family:Tahoma,"Segoe UI",sans-serif;color:#e9edf4;background:#0a0d12;font-synthesis:none;--bg:#0a0d12;--panel:#10151d;--panel2:#141b25;--line:#252e3b;--muted:#8d9aab;--text:#e9edf4;--green:#5fe0ad;--red:#ff7f88;--amber:#f3c66d;--accent:#9bb7ff;--radius:16px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;line-height:1.7}button{font:inherit;color:inherit;cursor:pointer}a{color:inherit;text-decoration:none}.app{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;border-left:1px solid var(--line);padding:25px 16px;background:#0c1016;display:flex;flex-direction:column;gap:28px}.brand{display:flex;align-items:center;gap:11px;padding:0 8px}.logo{width:38px;height:38px;border:1px solid #3b4b5d;border-radius:12px;display:grid;place-items:center;background:#17232a;color:var(--green);font-weight:800;font-size:18px}.brand-name{font-weight:750;font-size:13px;letter-spacing:.2px}.brand-sub{color:var(--muted);font-size:10px}.nav-title{font-size:10px;color:#667487;padding:0 12px 7px}.nav{display:grid;gap:5px}.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:#9ca9ba;font-size:12px}.nav a:hover,.nav a.active{background:#18212c;color:#f4f7fb}.nav a.active{box-shadow:inset -2px 0 var(--green)}.nav-icon{width:18px;text-align:center;color:#a5b5c7;font-size:15px}.side-bottom{margin-top:auto}.mode-card{border:1px solid #29483e;background:#101e1a;border-radius:12px;padding:13px}.mode-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}.live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 0 4px #5fe0ad16}.mode-card p{color:#9cb6aa;font-size:10px;margin:7px 0 0}.main{min-width:0;max-width:1600px;width:100%;margin:auto;padding:28px clamp(16px,3vw,42px) 32px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:27px}.eyebrow{font-size:10px;color:var(--muted);margin-bottom:4px}.page-title{font-size:23px;line-height:1.5;letter-spacing:-.5px;margin:0;font-weight:750}.subtitle{color:var(--muted);font-size:11px;margin-top:5px}.top-actions{display:flex;align-items:center;gap:9px}.connection{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 12px;font-size:11px;color:#aeb9c8}.connection .live-dot{background:var(--amber);box-shadow:none}.connection.ok .live-dot{background:var(--green)}.connection.error .live-dot{background:var(--red)}.button{border:1px solid #344151;background:#18212c;border-radius:10px;padding:9px 13px;font-size:11px;transition:background .15s,border-color .15s}.button:hover{background:#202c39;border-color:#516277}.button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.button[disabled]{opacity:.55;cursor:wait}.section{margin-top:20px;scroll-margin-top:20px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}.section-title{margin:0;font-size:14px;font-weight:700}.section-note{font-size:10px;color:var(--muted);margin-top:3px}.muted{color:var(--muted)}.tag{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:5px 8px;color:#aeb9c8;background:#121923;font-size:10px;white-space:nowrap}.tag.green{color:var(--green);border-color:#285443;background:#102019}.tag.warn{color:var(--amber);border-color:#5a492b;background:#211b10}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric-card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);min-width:0}.metric-card{padding:17px 18px}.metric-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.metric-label{font-size:11px;color:#a1adbc}.metric-symbol{width:29px;height:29px;border-radius:9px;display:grid;place-items:center;background:#1b2631;color:#9fb5c8;font-size:14px}.metric-value{font-size:25px;font-weight:750;letter-spacing:-.5px;line-height:1.5;margin-top:12px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.metric-foot{font-size:10px;color:var(--muted);margin-top:4px;min-height:17px}.positive{color:var(--green)!important}.negative{color:var(--red)!important}.layout-main{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr);gap:14px}.panel{padding:18px}.chart-wrap{height:230px;position:relative;overflow:hidden}.chart-wrap svg{width:100%;height:100%;display:block;overflow:visible}.chart-empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:11px}.chart-legend{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted)}.legend-line{height:2px;width:17px;background:var(--green);border-radius:2px}.chart-meta{display:flex;justify-content:space-between;gap:12px;margin-top:8px;color:var(--muted);font-size:10px}.market-price{font-size:27px;font-weight:750;letter-spacing:-.6px;margin:4px 0}.market-pair{font-size:11px;color:#a8b5c6}.market-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:22px}.market-cell{padding:12px;border:1px solid var(--line);border-radius:11px;background:#0e131a}.cell-label{font-size:10px;color:var(--muted)}.cell-value{font-size:13px;font-weight:700;margin-top:5px;overflow-wrap:anywhere}.position-box{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}.position-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.position-title{font-size:12px;font-weight:700}.position-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.position-grid .cell-value{font-variant-numeric:tabular-nums}.memory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.memory-item{padding:14px;border:1px solid var(--line);border-radius:12px;background:#0e131a}.memory-number{font-size:21px;font-weight:750;font-variant-numeric:tabular-nums}.memory-label{font-size:10px;color:var(--muted);margin-top:4px}.table-panel{padding:0;overflow:hidden}.table-panel .section-head{padding:17px 18px 0}.table-wrap{overflow:auto;max-width:100%}table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px}th{font-weight:500;color:#8190a3;text-align:right;padding:12px 16px;border-bottom:1px solid var(--line);background:#111720}td{padding:13px 16px;border-bottom:1px solid #202833;color:#d0d7e1}tbody tr:last-child td{border-bottom:0}tbody tr:hover td{background:#131b24}.pill{display:inline-flex;align-items:center;border-radius:6px;padding:3px 7px;font-size:10px;background:#222b37;color:#b8c5d4}.pill.buy{background:#102b21;color:var(--green)}.pill.sell{background:#321a20;color:var(--red)}.pill.hold{background:#2b2417;color:var(--amber)}.empty-row{text-align:center;padding:28px 12px;color:var(--muted)}.backtest-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.backtest-stat{border:1px solid var(--line);border-radius:12px;padding:14px;background:#0e131a}.backtest-stat .metric-value{font-size:20px;margin-top:8px}.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:23px;padding:14px 2px;color:#68778a;font-size:10px}.foot strong{color:#a2afbd;font-weight:600}.toast{position:fixed;bottom:20px;left:20px;max-width:min(400px,calc(100vw - 40px));background:#18212c;border:1px solid #3b4a5c;padding:11px 15px;border-radius:11px;font-size:11px;box-shadow:0 10px 30px #0005;z-index:10}.hidden{display:none!important}
+@media(max-width:1100px){.app{grid-template-columns:190px minmax(0,1fr)}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.layout-main{grid-template-columns:1fr}.market-grid{margin-top:14px}.memory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.app{display:block}.sidebar{position:relative;height:auto;padding:13px 15px;border-left:0;border-bottom:1px solid var(--line);gap:12px}.brand{padding:0 2px}.logo{width:34px;height:34px}.nav-title,.side-bottom{display:none}.nav{display:flex;overflow-x:auto;padding-bottom:2px}.nav a{white-space:nowrap;flex-shrink:0;padding:8px 10px}.nav a.active{box-shadow:inset 0 -2px var(--green)}.main{padding:22px 13px 25px}.page-title{font-size:20px}.topbar{margin-bottom:20px}.metric-card{padding:14px}.metric-value{font-size:22px}.panel{padding:14px}.table-panel{padding:0}.table-panel .section-head{padding:15px 14px 0}.backtest-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.chart-wrap{height:200px}}
+@media(max-width:390px){.metrics{grid-template-columns:1fr 1fr;gap:8px}.metric-card{padding:12px}.metric-label{font-size:10px}.metric-value{font-size:19px}.top-actions{width:100%;justify-content:space-between}.connection{flex:1}.memory-grid{gap:7px}.memory-item{padding:11px}.position-grid{gap:9px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important}}
+</style>
 </head>
 <body>
-<main class="shell">
-  <header class="top">
-    <div class="brand"><div class="mark">M</div><div><h1>مرکز کنترل ترید هوشمند</h1><p>پایش ربات، حافظه و معاملات شبیه‌سازی‌شده</p></div></div>
-    <div class="status"><span class="dot" id="health-dot"></span><span id="connection">در حال اتصال…</span><span class="tag">فقط Paper Trading</span></div>
+<div class="app">
+<aside class="sidebar">
+  <a class="brand" href="#overview" aria-label="مرکز کنترل">
+    <div class="logo">M<span aria-hidden="true">.</span></div>
+    <div><div class="brand-name">MY TRADING AI</div><div class="brand-sub">مرکز کنترل هوشمند</div></div>
+  </a>
+  <div><div class="nav-title">فضای کاری</div><nav class="nav" aria-label="ناوبری اصلی">
+    <a class="active" href="#overview"><span class="nav-icon">◫</span>نمای کلی</a>
+    <a href="#market"><span class="nav-icon">⌁</span>بازار و پوزیشن</a>
+    <a href="#activity"><span class="nav-icon">≋</span>فعالیت‌ها</a>
+    <a href="#learning"><span class="nav-icon">◎</span>حافظه و یادگیری</a>
+    <a href="#backtest"><span class="nav-icon">▥</span>بک‌تست</a>
+  </nav></div>
+  <div class="side-bottom"><div class="mode-card"><div class="mode-head"><span class="live-dot"></span>حالت شبیه‌سازی</div><p>فقط داده و معاملات مجازی؛ سفارش واقعی غیرفعال است.</p></div></div>
+</aside>
+<main class="main">
+  <header class="topbar" id="overview">
+    <div><div class="eyebrow">داشبورد / نمای کلی</div><h1 class="page-title">مرکز کنترل</h1><p class="subtitle">وضعیت حساب، بازار و عملکرد سیستم در یک نگاه</p></div>
+    <div class="top-actions"><div class="connection" id="connection" role="status" aria-live="polite"><span class="live-dot"></span><span id="connection-text">در حال بررسی اتصال…</span></div><button class="button" id="refresh" type="button">↻ &nbsp; به‌روزرسانی</button></div>
   </header>
 
-  <section class="grid" aria-label="خلاصه حساب">
-    <article class="card"><div class="metric-label">موجودی نقدی مجازی</div><div class="metric" id="balance">—</div><div class="sub">پس از کارمزد معاملات بسته‌شده</div></article>
-    <article class="card"><div class="metric-label">ارزش کل حساب</div><div class="metric" id="equity">—</div><div class="sub">با ارزش‌گذاری آخرین قیمت ذخیره‌شده</div></article>
-    <article class="card"><div class="metric-label">قیمت آخر بازار</div><div class="metric" id="price">—</div><div class="sub" id="market-meta">منتظر داده بازار</div></article>
-    <article class="card"><div class="metric-label">تصمیم‌های ذخیره‌شده</div><div class="metric" id="decision-count">0</div><div class="sub" id="trade-count">معامله ثبت‌شده: 0</div></article>
+  <section class="metrics" aria-label="شاخص‌های حساب">
+    <article class="metric-card"><div class="metric-top"><span class="metric-label">ارزش کل حساب</span><span class="metric-symbol">◈</span></div><div class="metric-value" id="equity">—</div><div class="metric-foot" id="equity-foot">ارزش نقد و دارایی مجازی</div></article>
+    <article class="metric-card"><div class="metric-top"><span class="metric-label">موجودی نقدی</span><span class="metric-symbol">◉</span></div><div class="metric-value" id="balance">—</div><div class="metric-foot">ماندهٔ حساب شبیه‌سازی‌شده</div></article>
+    <article class="metric-card"><div class="metric-top"><span class="metric-label">سود / زیان حساب</span><span class="metric-symbol">↗</span></div><div class="metric-value" id="account-pnl">—</div><div class="metric-foot" id="account-pnl-foot">نسبت به موجودی شروع</div></article>
+    <article class="metric-card"><div class="metric-top"><span class="metric-label">تصمیم‌های ثبت‌شده</span><span class="metric-symbol">≋</span></div><div class="metric-value" id="decision-count">—</div><div class="metric-foot" id="trade-count">معاملات ثبت‌شده: —</div></article>
   </section>
 
-  <section class="section split">
-    <article class="card"><div class="section-head"><h2>وضعیت پوزیشن</h2><span class="tag" id="position-tag">بدون پوزیشن</span></div><div id="position-details"><div class="empty">هنوز وضعیت حساب دریافت نشده است.</div></div></article>
-    <article class="card"><div class="section-head"><h2>حافظه و یادگیری</h2><span class="tag">SQLite</span></div><div id="memory-details"><div class="empty">در انتظار اتصال به حافظه</div></div><p style="margin-top:12px">ذخیره‌شدن تجربه‌ها به‌معنای آموزش خودکار مدل نیست؛ چرخه آموزش و ارزیابی جداگانه توسعه داده خواهد شد.</p></article>
+  <section class="section layout-main" id="market">
+    <article class="panel">
+      <div class="section-head"><div><h2 class="section-title">منحنی سرمایهٔ بک‌تست</h2><div class="section-note">روند تاریخی گزارش ذخیره‌شده، نه موجودی زنده</div></div><span class="tag" id="chart-count">بدون داده</span></div>
+      <div class="chart-wrap" id="chart-wrap"><div class="chart-empty">پس از اجرای بک‌تست، منحنی سرمایه اینجا نمایش داده می‌شود.</div></div>
+      <div class="chart-meta"><span id="chart-start">شروع: —</span><span class="chart-legend"><i class="legend-line"></i>ارزش حساب</span><span id="chart-end">پایان: —</span></div>
+    </article>
+    <article class="panel">
+      <div class="section-head"><div><h2 class="section-title">نمای بازار</h2><div class="section-note">آخرین کندل ذخیره‌شده توسط ربات</div></div><span class="tag" id="market-tag">بدون داده</span></div>
+      <div class="market-pair" id="market-pair">بازار نامشخص</div><div class="market-price" id="price">—</div>
+      <div class="market-grid">
+        <div class="market-cell"><div class="cell-label">بازهٔ زمانی</div><div class="cell-value" id="timeframe">—</div></div>
+        <div class="market-cell"><div class="cell-label">زمان کندل</div><div class="cell-value" id="market-time">—</div></div>
+      </div>
+      <div class="position-box"><div class="position-head"><span class="position-title">پوزیشن مجازی</span><span class="tag" id="position-tag">بدون پوزیشن</span></div><div id="position-details" class="muted" style="font-size:11px;margin-top:10px">وضعیت پوزیشن هنوز دریافت نشده است.</div></div>
+    </article>
   </section>
 
-  <section class="section card"><div class="section-head"><h2>آخرین معاملات</h2><button id="refresh">به‌روزرسانی</button></div><div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>نوع</th><th>قیمت</th><th>مقدار</th><th>کارمزد</th><th>سود/زیان تحقق‌یافته</th><th>دلیل</th></tr></thead><tbody id="trades"><tr><td colspan="8" class="empty">در انتظار داده</td></tr></tbody></table></div></section>
-
-  <section class="section card"><div class="section-head"><h2>آخرین تصمیم‌های مدل</h2><span class="tag">ثبت‌شده در حافظه</span></div><div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>بازه</th><th>تصمیم</th><th>قیمت</th><th>اطمینان مدل</th><th>نتیجه</th></tr></thead><tbody id="decisions"><tr><td colspan="7" class="empty">در انتظار داده</td></tr></tbody></table></div></section>
-  <section class="section card">
-    <div class="section-head"><h2>نتیجهٔ آخرین بک‌تست</h2><span class="tag" id="backtest-status">گزارش موجود نیست</span></div>
-    <div class="grid">
-      <article><div class="metric-label">بازده خالص</div><div class="metric" id="bt-return">—</div></article>
-      <article><div class="metric-label">حداکثر افت سرمایه</div><div class="metric" id="bt-drawdown">—</div></article>
-      <article><div class="metric-label">نرخ معاملات برنده</div><div class="metric" id="bt-winrate">—</div></article>
-      <article><div class="metric-label">تعداد معاملات</div><div class="metric" id="bt-trades">—</div></article>
+  <section class="section panel" id="learning">
+    <div class="section-head"><div><h2 class="section-title">حافظهٔ سیستم</h2><div class="section-note">تعداد رکوردهای ذخیره‌شده؛ ذخیرهٔ تجربه به‌معنای آموزش خودکار مدل نیست.</div></div><span class="tag">SQLite</span></div>
+    <div class="memory-grid">
+      <div class="memory-item"><div class="memory-number" id="mem-decisions">—</div><div class="memory-label">تصمیم‌ها</div></div>
+      <div class="memory-item"><div class="memory-number" id="mem-trades">—</div><div class="memory-label">معاملات</div></div>
+      <div class="memory-item"><div class="memory-number" id="mem-patterns">—</div><div class="memory-label">الگوهای ثبت‌شده</div></div>
+      <div class="memory-item"><div class="memory-number" id="mem-evaluations">—</div><div class="memory-label">ارزیابی مدل‌ها</div></div>
     </div>
-    <p style="margin-top:12px">این گزارش مربوط به داده‌های تاریخی و خط‌مبنای تکنیکال است؛ نتیجهٔ گذشته تضمین‌کنندهٔ سود آینده نیست.</p>
   </section>
-  <footer class="foot"><span>رابط فقط‌خواندنی؛ هیچ دکمه‌ای سفارش معامله ارسال نمی‌کند.</span><span id="updated">آخرین به‌روزرسانی: —</span></footer>
+
+  <section class="section panel table-panel" id="activity">
+    <div class="section-head"><div><h2 class="section-title">آخرین معاملات</h2><div class="section-note">تراکنش‌های ثبت‌شده در حافظهٔ محلی</div></div><span class="tag" id="trades-tag">۰ رکورد</span></div>
+    <div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>نوع</th><th>قیمت</th><th>مقدار</th><th>کارمزد</th><th>سود / زیان</th><th>دلیل</th></tr></thead><tbody id="trades"><tr><td class="empty-row" colspan="8">در انتظار داده</td></tr></tbody></table></div>
+  </section>
+  <section class="section panel table-panel">
+    <div class="section-head"><div><h2 class="section-title">آخرین تصمیم‌های مدل</h2><div class="section-note">خروجی تصمیم‌گیری ثبت‌شده در حافظه</div></div><span class="tag" id="decisions-tag">۰ رکورد</span></div>
+    <div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>بازه</th><th>تصمیم</th><th>قیمت</th><th>اطمینان ML</th><th>نتیجه</th></tr></thead><tbody id="decisions"><tr><td class="empty-row" colspan="7">در انتظار داده</td></tr></tbody></table></div>
+  </section>
+
+  <section class="section panel" id="backtest">
+    <div class="section-head"><div><h2 class="section-title">ارزیابی بک‌تست</h2><div class="section-note">گزارش آخرین اجرای ذخیره‌شده؛ خط‌مبنای تکنیکال</div></div><span class="tag" id="backtest-status">گزارش موجود نیست</span></div>
+    <div class="backtest-grid">
+      <div class="backtest-stat"><div class="metric-label">بازده خالص</div><div class="metric-value" id="bt-return">—</div></div>
+      <div class="backtest-stat"><div class="metric-label">حداکثر افت سرمایه</div><div class="metric-value" id="bt-drawdown">—</div></div>
+      <div class="backtest-stat"><div class="metric-label">نرخ معاملات برنده</div><div class="metric-value" id="bt-winrate">—</div></div>
+      <div class="backtest-stat"><div class="metric-label">تعداد معاملات</div><div class="metric-value" id="bt-trades">—</div></div>
+    </div>
+    <p class="section-note" style="margin-top:13px">نتیجهٔ تاریخی تضمین‌کنندهٔ سود آینده نیست. این گزارش هنوز ارزیابی walk-forward از کل منطق ترکیبی ML و AI نیست.</p>
+  </section>
+  <footer class="foot"><span><strong>حالت فقط‌خواندنی</strong> · هیچ دکمه‌ای سفارش یا تنظیمات ربات را تغییر نمی‌دهد.</span><span id="updated">آخرین بررسی: —</span></footer>
 </main>
+</div>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 <script>
-const $ = id => document.getElementById(id);
-const fmt = (v, digits=2) => v == null || !Number.isFinite(Number(v)) ? "—" : Number(v).toLocaleString("fa-IR",{maximumFractionDigits:digits,minimumFractionDigits:0});
-const dateFmt = v => { if(!v) return "—"; const d=new Date(v); return Number.isNaN(d.getTime())?String(v):d.toLocaleString("fa-IR",{dateStyle:"short",timeStyle:"short"}); };
-const cell = (row, value, className="") => { const td=document.createElement("td"); td.textContent=value ?? "—"; if(className) td.className=className; row.appendChild(td); return td; };
-const decisionClass = v => v==="BUY"?"buy":v==="SELL"?"sell":"hold";
-function fillRows(id, items, cols, emptyText){
- const body=$(id); body.replaceChildren();
- if(!items.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=cols;td.className="empty";td.textContent=emptyText;tr.appendChild(td);body.appendChild(tr);return;}
- items.forEach(item=>{const tr=document.createElement("tr");colsFor(item).forEach(([value,klass])=>cell(tr,value,klass));body.appendChild(tr);});
- function colsFor(item){return id==="trades"?[
- [dateFmt(item.timestamp)],[item.symbol],[item.side,decisionClass(item.side)],[fmt(item.price,6)],[fmt(item.quantity,8)],[fmt(item.fee,6)],[item.realized_pnl==null?"—":fmt(item.realized_pnl,4)],[item.reason]
- ]:[
- [dateFmt(item.timestamp)],[item.symbol],[item.timeframe],[item.decision,decisionClass(item.decision)],[fmt(item.price,6)],[item.confidence==null?"—":fmt(Number(item.confidence)*100,1)+"٪"],[item.outcome?.exit_reason || (item.outcome?"ثبت نتیجه":"باز/بدون نتیجه")]
- ];}
+"use strict";
+const $=id=>document.getElementById(id);
+const fmt=(v,d=2)=>v===null||v===undefined||v===""||!Number.isFinite(Number(v))?"—":Number(v).toLocaleString("fa-IR",{maximumFractionDigits:d,minimumFractionDigits:0});
+const money=v=>fmt(v,2)+" USDT";
+const dateFmt=v=>{if(!v)return"—";const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString("fa-IR",{dateStyle:"short",timeStyle:"short"});};
+const timeFmt=v=>{if(!v)return"—";const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleTimeString("fa-IR",{hour:"2-digit",minute:"2-digit"});};
+const cell=(row,value,cls="")=>{const td=document.createElement("td");td.textContent=value===null||value===undefined||value===""?"—":String(value);if(cls)td.className=cls;row.appendChild(td);return td;};
+const pill=v=>v==="BUY"?"buy":v==="SELL"?"sell":"hold";
+let refreshBusy=false,toastTimer=null;
+function showToast(message){const el=$("toast");el.textContent=message;el.classList.remove("hidden");if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add("hidden"),3200);}
+function setConnection(kind,text){const el=$("connection");el.classList.remove("ok","error");if(kind)el.classList.add(kind);$("connection-text").textContent=text;}
+function setTone(el,value){el.classList.remove("positive","negative");if(Number.isFinite(Number(value))&&Number(value)>0)el.classList.add("positive");else if(Number.isFinite(Number(value))&&Number(value)<0)el.classList.add("negative");}
+function fillRows(id,items,cols,emptyText){
+ const body=$(id);body.replaceChildren();
+ if(!Array.isArray(items)||items.length===0){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=cols;td.className="empty-row";td.textContent=emptyText;tr.appendChild(td);body.appendChild(tr);return;}
+ items.forEach(item=>{const tr=document.createElement("tr");
+ if(id==="trades"){cell(tr,dateFmt(item.timestamp));cell(tr,item.symbol);cell(tr,item.side,pill(item.side));cell(tr,fmt(item.price,6));cell(tr,fmt(item.quantity,8));cell(tr,fmt(item.fee,6));cell(tr,item.realized_pnl==null?"—":fmt(item.realized_pnl,4),Number(item.realized_pnl)>0?"positive":Number(item.realized_pnl)<0?"negative":"");cell(tr,item.reason);}
+ else{cell(tr,dateFmt(item.timestamp));cell(tr,item.symbol);cell(tr,item.timeframe);cell(tr,item.decision,pill(item.decision));cell(tr,fmt(item.price,6));cell(tr,item.confidence==null?"—":fmt(Number(item.confidence)*100,1)+"٪");cell(tr,item.outcome?.exit_reason||(item.outcome?"ثبت نتیجه":"بدون نتیجه"));}
+ body.appendChild(tr);});
 }
 function renderPosition(pos){
  const box=$("position-details");box.replaceChildren();
- if(!pos){$("position-tag").textContent="بدون پوزیشن";const empty=document.createElement("div");empty.className="empty";empty.textContent="در حال حاضر پوزیشن مجازی باز نیست.";box.appendChild(empty);return;}
- $("position-tag").textContent="پوزیشن باز";
- [["قیمت ورود",fmt(pos.entry,6)],["مقدار",fmt(pos.quantity,8)],["حد ضرر",fmt(pos.stop,6)],["حد سود",fmt(pos.target,6)]].forEach(([k,v])=>{const row=document.createElement("div");row.className="position";const a=document.createElement("span"),b=document.createElement("span");a.className="key";b.className="value";a.textContent=k;b.textContent=v;row.append(a,b);box.appendChild(row);});
+ if(!pos){$("position-tag").textContent="بدون پوزیشن";$("position-tag").className="tag";box.textContent="در حال حاضر پوزیشن مجازی بازی وجود ندارد.";return;}
+ $("position-tag").textContent="باز";$("position-tag").className="tag green";
+ const grid=document.createElement("div");grid.className="position-grid";
+ [["قیمت ورود",fmt(pos.entry,6)],["مقدار",fmt(pos.quantity,8)],["حد ضرر",fmt(pos.stop,6)],["حد سود",fmt(pos.target,6)]].forEach(([label,value])=>{const wrap=document.createElement("div"),a=document.createElement("div"),b=document.createElement("div");a.className="cell-label";b.className="cell-value";a.textContent=label;b.textContent=value;wrap.append(a,b);grid.appendChild(wrap);});box.appendChild(grid);
 }
 function renderMemory(mem){
- const box=$("memory-details");box.replaceChildren();
- [["تصمیم‌ها",mem.decisions],["معاملات",mem.trades],["الگوهای ثبت‌شده",mem.patterns],["ارزیابی مدل‌ها",mem.evaluations]].forEach(([k,v])=>{const row=document.createElement("div");row.className="position";const a=document.createElement("span"),b=document.createElement("span");a.className="key";b.className="value";a.textContent=k;b.textContent=fmt(v,0);row.append(a,b);box.appendChild(row);});
+ const map=[["mem-decisions","decisions"],["mem-trades","trades"],["mem-patterns","patterns"],["mem-evaluations","evaluations"]];
+ map.forEach(([id,key])=>$(id).textContent=fmt(mem?.[key]??0,0));
 }
 function renderBacktest(data){
- const metrics=data?.metrics||{};
- const available=Boolean(data?.available && Object.keys(metrics).length);
- $("backtest-status").textContent=available?"گزارش آماده":"گزارش موجود نیست";
- $("bt-return").textContent=available?fmt(metrics.net_return_pct,2)+"٪":"—";
- $("bt-drawdown").textContent=available?fmt(metrics.max_drawdown_pct,2)+"٪":"—";
- $("bt-winrate").textContent=available?fmt(metrics.win_rate_pct,2)+"٪":"—";
- $("bt-trades").textContent=available?fmt(metrics.trades,0):"—";
+ const metrics=data?.metrics||{},available=Boolean(data?.available&&Object.keys(metrics).length);
+ $("backtest-status").textContent=available?"گزارش آماده":"گزارش موجود نیست";$("backtest-status").className=available?"tag green":"tag";
+ $("bt-return").textContent=available?fmt(metrics.net_return_pct,2)+"٪":"—";$("bt-drawdown").textContent=available?fmt(metrics.max_drawdown_pct,2)+"٪":"—";$("bt-winrate").textContent=available?fmt(metrics.win_rate_pct,2)+"٪":"—";$("bt-trades").textContent=available?fmt(metrics.trades,0):"—";
+ setTone($("bt-return"),metrics.net_return_pct);
+ renderEquityChart(data?.equity_curve||[]);
 }
+function renderEquityChart(points){
+ const wrap=$("chart-wrap");wrap.replaceChildren();
+ const valid=Array.isArray(points)?points.filter(p=>Number.isFinite(Number(p?.equity))):[];
+ $("chart-count").textContent=valid.length?fmt(valid.length,0)+" نقطه":"بدون داده";
+ $("chart-start").textContent="شروع: "+(valid.length?fmt(valid[0].equity,2)+" USDT":"—");
+ $("chart-end").textContent="پایان: "+(valid.length?fmt(valid[valid.length-1].equity,2)+" USDT":"—");
+ if(valid.length<2){const empty=document.createElement("div");empty.className="chart-empty";empty.textContent="پس از اجرای بک‌تست، منحنی سرمایه اینجا نمایش داده می‌شود.";wrap.appendChild(empty);return;}
+ const NS="http://www.w3.org/2000/svg",svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 800 220");svg.setAttribute("role","img");svg.setAttribute("aria-label","منحنی ارزش سرمایه در بک‌تست");
+ const values=valid.map(p=>Number(p.equity)),min=Math.min(...values),max=Math.max(...values),range=max-min||Math.max(Math.abs(max)*.01,1),left=14,right=786,top=18,bottom=190;
+ for(let i=0;i<4;i++){const y=top+(bottom-top)*i/3,line=document.createElementNS(NS,"line");line.setAttribute("x1",left);line.setAttribute("x2",right);line.setAttribute("y1",y);line.setAttribute("y2",y);line.setAttribute("stroke","#28313d");line.setAttribute("stroke-dasharray","3 6");svg.appendChild(line);}
+ const coords=values.map((v,i)=>[left+(right-left)*i/(values.length-1),bottom-(v-min)/range*(bottom-top)]);
+ const area=document.createElementNS(NS,"polygon");area.setAttribute("points",left+","+bottom+" "+coords.map(p=>p.join(",")).join(" ")+" "+right+","+bottom);area.setAttribute("fill","#5fe0ad");area.setAttribute("fill-opacity",".07");svg.appendChild(area);
+ const line=document.createElementNS(NS,"polyline");line.setAttribute("points",coords.map(p=>p.join(",")).join(" "));line.setAttribute("fill","none");line.setAttribute("stroke","#5fe0ad");line.setAttribute("stroke-width","2.5");line.setAttribute("stroke-linecap","round");line.setAttribute("stroke-linejoin","round");svg.appendChild(line);
+ const last=coords[coords.length-1],dot=document.createElementNS(NS,"circle");dot.setAttribute("cx",last[0]);dot.setAttribute("cy",last[1]);dot.setAttribute("r","4");dot.setAttribute("fill","#5fe0ad");dot.setAttribute("stroke","#10151d");dot.setAttribute("stroke-width","2");svg.appendChild(dot);wrap.appendChild(svg);
+}
+function renderStatus(status){
+ $("balance").textContent=money(status.balance);$("equity").textContent=money(status.equity);
+ const pnl=Number(status.equity)-Number(status.start_balance),pct=Number(status.start_balance)>0?pnl/Number(status.start_balance)*100:NaN;
+ $("account-pnl").textContent=Number.isFinite(pnl)?(pnl>0?"+":"")+fmt(pnl,2)+" USDT":"—";$("account-pnl-foot").textContent=Number.isFinite(pct)?"تغییر از شروع: "+(pct>0?"+":"")+fmt(pct,2)+"٪":"نسبت به موجودی شروع";
+ setTone($("account-pnl"),pnl);
+ $("decision-count").textContent=fmt(status.memory?.decisions??0,0);$("trade-count").textContent="معاملات ثبت‌شده: "+fmt(status.memory?.trades??0,0);
+ const m=status.market||{};$("price").textContent=m.price?fmt(m.price,6):"—";$("market-pair").textContent=m.symbol||"بازار نامشخص";$("timeframe").textContent=m.timeframe||"—";$("market-time").textContent=dateFmt(m.timestamp);
+ $("market-tag").textContent=m.price?"قیمت ثبت‌شده":"بدون داده";$("market-tag").className=m.price?"tag green":"tag";
+ $("equity-foot").textContent=status.state_available?"وضعیت ذخیره‌شدهٔ حساب مجازی":"فایل وضعیت حساب هنوز موجود نیست";
+ renderPosition(status.position);renderMemory(status.memory||{});
+}
+async function getJson(url){const response=await fetch(url,{cache:"no-store",headers:{"Accept":"application/json"}});if(!response.ok)throw new Error(url+" returned "+response.status);return response.json();}
 async function refresh(){
+ if(refreshBusy)return;refreshBusy=true;const button=$("refresh");button.disabled=true;
  try{
-  const [status,trades,decisions,backtest]=await Promise.all(["/api/status","/api/trades?limit=12","/api/decisions?limit=12","/api/backtest"].map(url=>fetch(url,{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("API error");return r.json();})));
-  $("health-dot").classList.add("ok");$("connection").textContent=status.state_available?"متصل به داده‌های محلی":"API فعال؛ هنوز داده حساب وجود ندارد";
-  $("balance").textContent=fmt(status.balance)+" USDT";$("equity").textContent=fmt(status.equity)+" USDT";
-  $("price").textContent=status.market?.price?fmt(status.market.price,6):"—";
-  $("market-meta").textContent=status.market?.symbol?status.market.symbol+" · "+status.market.timeframe+" · "+dateFmt(status.market.timestamp):"قیمت هنوز ذخیره نشده";
-  $("decision-count").textContent=fmt(status.memory?.decisions||0,0);$("trade-count").textContent="معامله ثبت‌شده: "+fmt(status.memory?.trades||0,0);
-  renderPosition(status.position);renderMemory(status.memory||{});renderBacktest(backtest);
-  fillRows("trades",trades.items||[],8,"هنوز معامله‌ای در حافظه ثبت نشده است.");
-  fillRows("decisions",decisions.items||[],7,"هنوز تصمیمی ثبت نشده است.");
-  $("updated").textContent="آخرین به‌روزرسانی: "+new Date().toLocaleTimeString("fa-IR");
- }catch(e){$("health-dot").classList.remove("ok");$("connection").textContent="اتصال به API برقرار نیست";$("updated").textContent="برای اجرا: python -m src.dashboard";}
+  const [health,status,trades,decisions,backtest]=await Promise.all(["/api/health","/api/status","/api/trades?limit=12","/api/decisions?limit=12","/api/backtest"].map(getJson));
+  setConnection("ok",status.state_available?"API متصل":"API فعال · در انتظار داده");
+  if(!status.state_available)showToast("API در دسترس است، اما هنوز فایل وضعیت حساب ساخته نشده است.");
+  renderStatus(status);renderBacktest(backtest);
+  fillRows("trades",trades.items,8,"هنوز معامله‌ای در حافظه ثبت نشده است.");fillRows("decisions",decisions.items,7,"هنوز تصمیمی در حافظه ثبت نشده است.");
+  $("trades-tag").textContent=fmt(trades.items?.length||0,0)+" رکورد";$("decisions-tag").textContent=fmt(decisions.items?.length||0,0)+" رکورد";
+  $("updated").textContent="آخرین بررسی: "+new Date().toLocaleTimeString("fa-IR");
+ }catch(error){setConnection("error","API در دسترس نیست");$("updated").textContent="آخرین بررسی ناموفق: "+new Date().toLocaleTimeString("fa-IR");showToast("ارتباط با API برقرار نشد. اجرای python -m src.dashboard را بررسی کن.");}
+ finally{refreshBusy=false;button.disabled=false;}
 }
-$("refresh").addEventListener("click",refresh);refresh();setInterval(refresh,10000);
+$("refresh").addEventListener("click",refresh);
+document.querySelectorAll(".nav a").forEach(link=>link.addEventListener("click",()=>{document.querySelectorAll(".nav a").forEach(a=>a.classList.remove("active"));link.classList.add("active");}));
+refresh();setInterval(refresh,10000);
 </script>
 </body>
 </html>
