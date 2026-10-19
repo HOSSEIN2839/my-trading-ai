@@ -13,6 +13,7 @@
 |---|---|---|
 | `src/market.py` | Fetch public candles and calculate deterministic indicators | Place orders or persist model decisions |
 | `src/learning.py` | Feature creation and model inference | Fetch market data or change broker state |
+| `src/pattern_mining.py` | Mine simple market-regime hypotheses and evaluate on a later holdout | Change bot decisions, promote patterns, or place orders |
 | `src/backtest.py` | Cost-aware historical simulation and financial metrics | Send real orders or silently claim ML/live performance |
 | `src/ai_analyst.py` | Optional external analysis and signal combination | Become a required dependency for basic operation |
 | `src/risk.py` | Position sizing and daily-loss guard | Execute orders or call external services |
@@ -29,7 +30,7 @@
 2. It persists the market snapshot so monitoring and daily-risk accounting share the same price reference.
 3. The broker rolls the UTC daily-loss window using marked-to-market equity and persists the last processed closed-candle ID to reduce duplicate decisions after restarts.
 4. The bot evaluates exits from the last closed candle, checks the daily loss guard, and combines technical, ML, and optional AI signals. Paper entries and signal exits use the next candle open, not the signal candle close.
-5. Approved paper actions go through `PaperBroker`; decisions and simulated trades are written to `TradingMemory`.
+5. Approved paper actions go through `PaperBroker`; decisions and simulated trades are written to `TradingMemory`. Exploratory pattern mining is an offline, separate command and cannot modify the runtime signal.
 6. The dashboard reads the persisted broker state and SQLite memory via `/api/status`, `/api/trades`, and `/api/decisions`; `/api/integration` checks the paper-mode flag and the presence/basic structure of the state file, SQLite tables, CSV ledger, and ML artifact.
 7. The historical backtest evaluates a signal at candle close and executes it at the next candle open; it applies fees and adverse slippage on both legs, includes costs in risk sizing, and resolves stop/target ambiguity conservatively.
 
@@ -54,6 +55,7 @@
 ## Current known limitations
 
 - The model does not yet retrain automatically from realized trade outcomes.
+- `src/pattern_mining.py` discovers single-feature quantile regimes using a chronological holdout and purged forward labels. Its reports are exploratory only, use a bounded one-request candle sample, omit transaction costs and do not promote patterns into bot decisions. Multiple-pattern selection can overfit; independent walk-forward periods and net-return validation remain necessary.
 - Model training purges the forward-label horizon at the chronological split, evaluates a held-out period, then trains the saved artifact on all labelled history. This evaluation is classification-based, not proof of net trading profitability.
 - Model artifacts are rejected if their feature list, symbol, or timeframe does not match the runtime configuration.
 - Cross-file persistence (JSON broker state, CSV log, and SQLite memory) is not yet a single atomic transaction; a process crash between writes can leave the ledger and memory temporarily inconsistent.
