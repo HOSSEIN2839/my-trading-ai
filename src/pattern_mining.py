@@ -137,6 +137,8 @@ def mine_patterns(
                 "research_only": True,
             })
 
+    single_feature_candidate_count = len(candidates)
+
     # Also mine two-feature interactions. All bin boundaries are derived from
     # training data only; a stricter support floor limits tiny subgroups.
     feature_bins: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
@@ -198,6 +200,7 @@ def mine_patterns(
                         "research_only": True,
                     })
 
+    interaction_candidate_count = len(candidates) - single_feature_candidate_count
     candidates.sort(
         key=lambda item: (item["test_mean_oriented_return"], item["test_support"]),
         reverse=True,
@@ -213,6 +216,8 @@ def mine_patterns(
         "horizon_candles": horizon,
         "threshold": float(threshold),
         "candidate_count": len(candidates),
+        "single_feature_candidate_count": single_feature_candidate_count,
+        "interaction_candidate_count": interaction_candidate_count,
         "patterns": candidates[:max_patterns],
         "warnings": [
             "Exploratory patterns are not automatically used by the bot.",
