@@ -12,7 +12,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DASHBOARD_DIR = PROJECT_ROOT / "dashboard"
@@ -90,7 +90,7 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
 
     @app.get("/api/trades")
     def trades():
-        limit = min(max(int(__import__("flask").request.args.get("limit", 25)), 1), 100)
+        limit = min(max(int(request.args.get("limit", 25)), 1), 100)
         rows = _query_memory(
             memory_file,
             "SELECT id, timestamp, symbol, side, price, quantity, fee, realized_pnl, reason "
