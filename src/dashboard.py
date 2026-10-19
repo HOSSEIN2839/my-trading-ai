@@ -6,6 +6,7 @@ Run with: python -m src.dashboard
 from __future__ import annotations
 
 import json
+import math
 import os
 import sqlite3
 from pathlib import Path
@@ -22,10 +23,30 @@ DASHBOARD_DIR = PROJECT_ROOT / "dashboard"
 
 
 def _read_json(path: Path) -> dict[str, Any]:
+    """Read an optional JSON artifact without letting corrupt data break the UI."""
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _finite_number(value: Any, default: float | None = None) -> float | None:
+    """Convert untrusted persisted values to finite numbers only."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    return number if math.isfinite(number) else default
+
+
+def _json_object(value: Any) -> dict[str, Any]:
+    """Decode stored JSON objects defensively; old/corrupt rows stay visible."""
+    try:
+        decoded = json.loads(value or "{}")
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    return decoded if isinstance(decoded, dict) else {}
 
 
 def _query_memory(path: Path, query: str, params: tuple = ()) -> list[dict[str, Any]]:
@@ -68,14 +89,17 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
     def status():
         state = _read_json(state_file)
         position = state.get("position")
-        snapshot = state.get("last_market") or {}
-        mark_price = snapshot.get("price")
+        position = position if isinstance(position, dict) else None
+        snapshot = state.get("last_market")
+        snapshot = snapshot if isinstance(snapshot, dict) else {}
+        mark_price = _finite_number(snapshot.get("price"))
         if mark_price is None and position:
-            mark_price = position.get("entry")
-        balance = float(state.get("balance", 0.0))
+            mark_price = _finite_number(position.get("entry"))
+        balance = _finite_number(state.get("balance"), 0.0) or 0.0
+        quantity = _finite_number(position.get("quantity"), 0.0) if position else 0.0
         equity = balance + (
-            float(position.get("quantity", 0.0)) * float(mark_price)
-            if position and mark_price is not None else 0.0
+            quantity * mark_price
+            if position and mark_price is not None and quantity is not None else 0.0
         )
         summary = _query_memory(
             memory_file,
@@ -90,7 +114,7 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
             "state_available": bool(state),
             "balance": balance,
             "equity": equity,
-            "start_balance": float(state.get("start_balance", balance)),
+            "start_balance": _finite_number(state.get("start_balance"), balance),
             "day": state.get("day"),
             "position": position,
             "market": snapshot,
@@ -131,8 +155,8 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
             (limit,),
         )
         for row in rows:
-            row["context"] = json.loads(row.pop("context_json") or "{}")
-            row["outcome"] = json.loads(row.pop("outcome_json")) if row.get("outcome_json") else None
+            row["context"] = _json_object(row.pop("context_json", "{}"))
+            row["outcome"] = _json_object(row.get("outcome_json")) if row.get("outcome_json") else None
             row.pop("outcome_json", None)
         return jsonify({"items": rows})
 
