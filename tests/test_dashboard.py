@@ -84,3 +84,43 @@ def test_dashboard_exposes_saved_backtest_metrics(tmp_path, monkeypatch):
     assert payload["metrics"]["max_drawdown_pct"] == 2.5
     assert payload["metrics"]["win_rate_pct"] == 60.0
     assert payload["metrics"]["trades"] == 10
+
+
+def test_integration_diagnostics_report_ready_components(tmp_path, monkeypatch):
+    state_path = tmp_path / "paper_state.json"
+    state_path.write_text(json.dumps({"balance": 1000, "start_balance": 1000, "position": None}), encoding="utf-8")
+    memory_path = tmp_path / "memory.sqlite3"
+    with TradingMemory(memory_path):
+        pass
+    trades_path = tmp_path / "trades.csv"
+    trades_path.write_text("time_utc,side,price,quantity,fee,balance,reason\\n", encoding="utf-8")
+    model_path = tmp_path / "model.joblib"
+    model_path.write_bytes(b"test-artifact")
+    monkeypatch.setenv("MODE", "paper")
+    monkeypatch.setenv("PAPER_TRADES_PATH", str(trades_path))
+    monkeypatch.setenv("MODEL_PATH", str(model_path))
+
+    app = create_app(state_path=state_path, memory_path=memory_path)
+    payload = app.test_client().get("/api/integration").get_json()
+
+    assert payload["overall"] == "ok"
+    assert {item["id"]: item["status"] for item in payload["checks"]} == {
+        "mode": "ok", "state": "ok", "memory": "ok", "ledger": "ok", "model": "ok"
+    }
+
+
+def test_integration_diagnostics_warn_when_runtime_artifacts_are_missing(tmp_path, monkeypatch):
+    monkeypatch.setenv("MODE", "paper")
+    monkeypatch.setenv("PAPER_TRADES_PATH", str(tmp_path / "missing.csv"))
+    monkeypatch.setenv("MODEL_PATH", str(tmp_path / "missing.joblib"))
+    app = create_app(state_path=tmp_path / "missing.json", memory_path=tmp_path / "missing.sqlite3")
+
+    payload = app.test_client().get("/api/integration").get_json()
+
+    assert payload["overall"] == "warning"
+    checks = {item["id"]: item["status"] for item in payload["checks"]}
+    assert checks["mode"] == "ok"
+    assert checks["state"] == "missing"
+    assert checks["memory"] == "missing"
+    assert checks["ledger"] == "missing"
+    assert checks["model"] == "missing"
