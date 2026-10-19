@@ -49,6 +49,9 @@ def main():
             candles = fetch_candles(SYMBOL, TIMEFRAME, LIMIT)
             features = make_features(candles)
             row = candles.iloc[-2].copy()
+            # Signals use the last closed candle; paper orders use the next candle open,
+            # matching the backtest execution contract and avoiding close-price lookahead.
+            execution_price = float(candles.iloc[-1]["open"])
             for feature in FEATURES:
                 row[feature] = features.iloc[-2][feature]
             price = float(row["close"])
@@ -105,29 +108,29 @@ def main():
             atr = float(row["atr"])
             if pos and signal == "SELL":
                 closed_position = dict(pos)
-                if broker.sell_all(price, "signal_exit"):
+                if broker.sell_all(execution_price, "signal_exit"):
                     exit_qty = float(closed_position["quantity"])
                     entry_price = float(closed_position["entry"])
-                    realized_pnl = (price - entry_price) * exit_qty - (entry_price * exit_qty + price * exit_qty) * FEE
+                    realized_pnl = (execution_price - entry_price) * exit_qty - (entry_price * exit_qty + execution_price * exit_qty) * FEE
                     memory.record_trade(symbol=SYMBOL, side="SELL", price=price,
                                         quantity=exit_qty, fee=price * exit_qty * FEE, realized_pnl=realized_pnl,
                                         reason="signal_exit", details={"entry": entry_price, "source": "paper_broker"})
                     if closed_position.get("decision_id") is not None:
                         memory.annotate_decision(int(closed_position["decision_id"]),
-                                                 {"exit_reason": "signal_exit", "exit_price": price,
+                                                 {"exit_reason": "signal_exit", "exit_price": execution_price,
                                                   "realized_pnl_after_fees": realized_pnl,
                                                   "return_pct_after_fees": realized_pnl / (entry_price * exit_qty)})
                 logging.info("پوزیشن مجازی بسته شد.")
             elif not pos and signal == "BUY" and atr > 0:
                 cash_balance = float(broker.state["balance"])
-                stop = price - STOP_ATR * atr
-                target = price + RR * (price - stop)
-                qty = position_size(cash_balance, price, stop, RISK, MAX_POSITION)
-                if broker.buy(price, qty, stop, target, f"AI_enabled:{ai.get('enabled', True)} ML:{ml['confidence']:.2f}", metadata={"decision_id": decision_id}):
-                    memory.record_trade(symbol=SYMBOL, side="BUY", price=price, quantity=qty,
-                                        fee=price * qty * FEE, reason="model_signal",
+                stop = execution_price - STOP_ATR * atr
+                target = execution_price + RR * (execution_price - stop)
+                qty = position_size(cash_balance, execution_price, stop, RISK, MAX_POSITION)
+                if broker.buy(execution_price, qty, stop, target, f"AI_enabled:{ai.get('enabled', True)} ML:{ml['confidence']:.2f}", metadata={"decision_id": decision_id}):
+                    memory.record_trade(symbol=SYMBOL, side="BUY", price=execution_price, quantity=qty,
+                                        fee=execution_price * qty * FEE, reason="model_signal",
                                         details={"stop": stop, "target": target, "ml_confidence": ml["confidence"], "source": "paper_broker"})
-                    logging.info("خرید مجازی: qty=%.8f stop=%.4f target=%.4f", qty, stop, target)
+                    logging.info("خرید مجازی: fill=%.4f qty=%.8f stop=%.4f target=%.4f", execution_price, qty, stop, target)
                 else:
                     logging.info("خرید مجازی رد شد (موجودی/اندازه/پوزیشن).")
         except KeyboardInterrupt:
