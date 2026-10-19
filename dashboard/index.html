@@ -45,6 +45,16 @@
   <section class="section card"><div class="section-head"><h2>آخرین معاملات</h2><button id="refresh">به‌روزرسانی</button></div><div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>نوع</th><th>قیمت</th><th>مقدار</th><th>کارمزد</th><th>سود/زیان تحقق‌یافته</th><th>دلیل</th></tr></thead><tbody id="trades"><tr><td colspan="8" class="empty">در انتظار داده</td></tr></tbody></table></div></section>
 
   <section class="section card"><div class="section-head"><h2>آخرین تصمیم‌های مدل</h2><span class="tag">ثبت‌شده در حافظه</span></div><div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>بازه</th><th>تصمیم</th><th>قیمت</th><th>اطمینان مدل</th><th>نتیجه</th></tr></thead><tbody id="decisions"><tr><td colspan="7" class="empty">در انتظار داده</td></tr></tbody></table></div></section>
+  <section class="section card">
+    <div class="section-head"><h2>نتیجهٔ آخرین بک‌تست</h2><span class="tag" id="backtest-status">گزارش موجود نیست</span></div>
+    <div class="grid">
+      <article><div class="metric-label">بازده خالص</div><div class="metric" id="bt-return">—</div></article>
+      <article><div class="metric-label">حداکثر افت سرمایه</div><div class="metric" id="bt-drawdown">—</div></article>
+      <article><div class="metric-label">نرخ معاملات برنده</div><div class="metric" id="bt-winrate">—</div></article>
+      <article><div class="metric-label">تعداد معاملات</div><div class="metric" id="bt-trades">—</div></article>
+    </div>
+    <p style="margin-top:12px">این گزارش مربوط به داده‌های تاریخی و خط‌مبنای تکنیکال است؛ نتیجهٔ گذشته تضمین‌کنندهٔ سود آینده نیست.</p>
+  </section>
   <footer class="foot"><span>رابط فقط‌خواندنی؛ هیچ دکمه‌ای سفارش معامله ارسال نمی‌کند.</span><span id="updated">آخرین به‌روزرسانی: —</span></footer>
 </main>
 <script>
@@ -75,7 +85,7 @@ function renderMemory(mem){
 }
 async function refresh(){
  try{
-  const [status,trades,decisions]=await Promise.all(["/api/status","/api/trades?limit=12","/api/decisions?limit=12"].map(url=>fetch(url,{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("API error");return r.json();})));
+  const [status,trades,decisions,backtest]=await Promise.all(["/api/status","/api/trades?limit=12","/api/decisions?limit=12","/api/backtest"].map(url=>fetch(url,{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("API error");return r.json();})));
   $("health-dot").classList.add("ok");$("connection").textContent=status.state_available?"متصل به داده‌های محلی":"API فعال؛ هنوز داده حساب وجود ندارد";
   $("balance").textContent=fmt(status.balance)+" USDT";$("equity").textContent=fmt(status.equity)+" USDT";
   $("price").textContent=status.market?.price?fmt(status.market.price,6):"—";
