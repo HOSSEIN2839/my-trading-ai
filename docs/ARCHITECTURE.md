@@ -20,6 +20,7 @@
 | `src/memory.py` | Persist decisions, trade records, outcomes, patterns and model evaluations | Decide whether an order is allowed |
 | `src/bot.py` | Orchestrate the runtime and connect components | Bypass risk checks or enable live mode |
 | `src/dashboard.py` | Expose read-only JSON views over persisted state | Change account state or place orders |
+| `src/paths.py` | Resolve relative data/model/report paths from the repository root | Hold business logic or trading state |
 | `dashboard/index.html` | Render dashboard data from the API | Implement trading rules or write directly to SQLite |
 
 ## Integration flow
@@ -34,6 +35,7 @@
 
 ## State and data contracts
 
+- Relative paths are resolved from the repository root by `src/paths.py`, independent of the caller's working directory.
 - Broker state defaults to `data/paper_state.json`; override with `PAPER_STATE_PATH`.
 - Broker CSV log defaults to `data/trades.csv`; override with `PAPER_TRADES_PATH`.
 - SQLite memory defaults to `data/memory.sqlite3`; override with `MEMORY_DB_PATH`.
