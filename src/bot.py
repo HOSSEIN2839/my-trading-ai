@@ -52,6 +52,7 @@ def main():
             for feature in FEATURES:
                 row[feature] = features.iloc[-2][feature]
             price = float(row["close"])
+            broker.record_market_price(price, SYMBOL, TIMEFRAME, str(row["timestamp"]))
             # Roll the UTC daily-loss window against current marked-to-market equity,
             # including an open position valued at the latest closed candle.
             broker.roll_day(price)
