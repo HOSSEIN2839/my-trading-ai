@@ -113,8 +113,19 @@ class PaperBroker:
         fee = cost * self.fee_rate
         if not _finite(cost + fee) or self.state["position"] is not None or cost + fee > self.state["balance"]:
             return False
-        if metadata is not None and not isinstance(metadata, dict):
-            return False
+        if metadata is not None:
+            if not isinstance(metadata, dict):
+                return False
+            # Metadata is supplemental only; it must never override accounting
+            # fields that determine position size, risk, or exit behavior.
+            reserved = {"entry", "quantity", "stop", "target"}
+            if reserved.intersection(metadata):
+                return False
+            # Validate serializability before mutating state or appending a CSV row.
+            try:
+                json.dumps(metadata, allow_nan=False)
+            except (TypeError, ValueError):
+                return False
         self.state["balance"] -= cost + fee
         self.state["position"] = {"entry": price, "quantity": quantity, "stop": stop, "target": target, **(metadata or {})}
         self._log("BUY", price, quantity, fee, reason)
