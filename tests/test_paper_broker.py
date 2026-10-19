@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from src.paper_broker import PaperBroker
 
 
@@ -15,7 +17,7 @@ def make_broker(tmp_path, balance=1000, fee=0.001):
 def test_equity_marks_open_position_to_market(tmp_path):
     broker = make_broker(tmp_path)
     assert broker.buy(100, 2, 90, 120, "test")
-    assert broker.equity(110) == 1019.8
+    assert broker.equity(110) == pytest.approx(1019.8)
 
 
 def test_daily_roll_uses_current_mark_price_for_open_position(tmp_path):
@@ -28,7 +30,7 @@ def test_daily_roll_uses_current_mark_price_for_open_position(tmp_path):
 
     assert broker.state["day"] == datetime.now(timezone.utc).date().isoformat()
     # Cash after buying (799.8) plus current marked value (160), not entry value (200).
-    assert broker.state["start_balance"] == 959.8
+    assert broker.state["start_balance"] == pytest.approx(959.8)
 
 
 def test_rejects_invalid_or_unaffordable_orders(tmp_path):
@@ -45,7 +47,7 @@ def test_stop_loss_takes_priority_when_both_levels_hit(tmp_path):
     reason = broker.check_exit(low=89, high=111, close=100)
     assert reason == "stop_loss"
     assert broker.state["position"] is None
-    assert broker.state["balance"] == 989.81
+    assert broker.state["balance"] == pytest.approx(989.81)
 
 
 def test_sell_all_clears_position_and_accounts_for_fee(tmp_path):
