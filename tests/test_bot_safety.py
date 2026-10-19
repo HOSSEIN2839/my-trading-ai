@@ -50,6 +50,19 @@ def test_bot_rejects_non_finite_risk_configuration_before_model_load(
     monkeypatch.setenv("MODE", "paper")
     monkeypatch.setenv(variable, value)
 
+    # Most settings are read into module constants at import time; override
+    # those constants explicitly so this test exercises the intended branch.
+    module_constants = {
+        "RISK_PER_TRADE": "RISK",
+        "MAX_DAILY_LOSS": "MAX_DAILY_LOSS",
+        "MAX_POSITION_FRACTION": "MAX_POSITION",
+        "ATR_STOP_MULTIPLIER": "STOP_ATR",
+        "REWARD_RISK": "RR",
+        "TAKER_FEE": "FEE",
+    }
+    if variable in module_constants:
+        monkeypatch.setattr(bot, module_constants[variable], float(value))
+
     def forbidden_model_load(**kwargs):
         raise AssertionError("invalid configuration must fail before model loading")
 
