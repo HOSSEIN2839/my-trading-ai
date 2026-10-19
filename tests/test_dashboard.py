@@ -149,8 +149,8 @@ def test_integration_diagnostics_detect_trade_ledger_mismatch(tmp_path, monkeypa
         pass
     trades_path = tmp_path / "trades.csv"
     trades_path.write_text(
-        "time_utc,side,price,quantity,fee,balance,reason\\n"
-        "2026-10-19T10:00:00+00:00,BUY,100,1,0.1,899.9,test\\n",
+        "time_utc,side,price,quantity,fee,balance,reason\n"
+        "2026-10-19T10:00:00+00:00,BUY,100,1,0.1,899.9,test\n",
         encoding="utf-8",
     )
     monkeypatch.setenv("MODE", "paper")
