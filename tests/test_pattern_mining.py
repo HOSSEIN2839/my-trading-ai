@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -45,6 +47,9 @@ def test_pattern_mining_returns_auditable_chronological_report():
         assert 0 <= pattern["test_hit_rate_wilson_95_lower"] <= 1
         assert pattern["research_only"] is True
     assert any("not automatically used" in warning for warning in report["warnings"])
+    scores = [p["train_mean_oriented_return"] for p in report["patterns"]]
+    assert scores == sorted(scores, reverse=True)
+    json.dumps(report, allow_nan=False)
 
 
 def test_pattern_mining_rejects_bad_inputs():
