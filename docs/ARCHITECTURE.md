@@ -13,6 +13,7 @@
 |---|---|---|
 | `src/market.py` | Fetch public candles and calculate deterministic indicators | Place orders or persist model decisions |
 | `src/learning.py` | Feature creation and model inference | Fetch market data or change broker state |
+| `src/backtest.py` | Cost-aware historical simulation and financial metrics | Send real orders or silently claim ML/live performance |
 | `src/ai_analyst.py` | Optional external analysis and signal combination | Become a required dependency for basic operation |
 | `src/risk.py` | Position sizing and daily-loss guard | Execute orders or call external services |
 | `src/paper_broker.py` | Simulate long-only spot orders, fees, stops/targets, account state | Connect to a live exchange |
@@ -29,6 +30,7 @@
 4. The bot evaluates existing stop/target exits, checks the daily loss guard, and combines technical, ML, and optional AI signals.
 5. Approved paper actions go through `PaperBroker`; decisions and simulated trades are written to `TradingMemory`.
 6. The dashboard reads the persisted broker state and SQLite memory via `/api/status`, `/api/trades`, and `/api/decisions`.
+7. The historical backtest evaluates a signal at candle close and executes it at the next candle open; it applies fees and adverse slippage on both legs and resolves stop/target ambiguity conservatively.
 
 ## State and data contracts
 
@@ -50,6 +52,7 @@
 ## Current known limitations
 
 - The model does not yet retrain automatically from realized trade outcomes.
-- A realistic historical portfolio backtest and walk-forward evaluation still need to be implemented.
+- The first cost-aware backtest is a technical-signal baseline; the exact combined ML/AI runtime policy and walk-forward evaluation are not yet simulated.
+- The current historical data fetch is limited to one exchange API request and is not yet a paginated, gap-audited multi-year dataset.
 - The dashboard reports persisted runtime state; it does not control or guarantee that the bot process is running.
 - When no market snapshot exists, equity can only be estimated using the entry price for an open position.
