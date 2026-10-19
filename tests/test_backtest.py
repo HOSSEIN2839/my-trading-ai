@@ -93,3 +93,26 @@ def test_backtest_rejects_unordered_timestamps_and_non_finite_values():
     frame.loc[1, "close"] = float("inf")
     with pytest.raises(ValueError, match="non-finite"):
         run_backtest(frame, signal)
+
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"initial_balance": float("nan")},
+        {"fee_rate": float("inf")},
+        {"slippage_rate": float("nan")},
+        {"risk_fraction": float("inf")},
+        {"max_position_fraction": float("nan")},
+        {"stop_atr_multiplier": float("inf")},
+        {"reward_risk": float("nan")},
+    ],
+)
+def test_backtest_rejects_non_finite_configuration(kwargs):
+    frame = candles([
+        (100, 101, 99, 100, "HOLD"),
+        (100, 101, 99, 100, "HOLD"),
+        (100, 101, 99, 100, "HOLD"),
+    ])
+    with pytest.raises(ValueError, match="finite"):
+        run_backtest(frame, signal, **kwargs)
