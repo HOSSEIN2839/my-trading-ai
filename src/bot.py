@@ -41,19 +41,21 @@ def main():
 
     while True:
         try:
-            broker.roll_day()
             candles = fetch_candles(SYMBOL, TIMEFRAME, LIMIT)
             features = make_features(candles)
             row = candles.iloc[-2].copy()
             for feature in FEATURES:
                 row[feature] = features.iloc[-2][feature]
+            price = float(row["close"])
+            # Roll the UTC daily-loss window against current marked-to-market equity,
+            # including an open position valued at the latest closed candle.
+            broker.roll_day(price)
             candle_id = str(row["timestamp"])
             if candle_id == last_candle:
                 time.sleep(POLL_SECONDS)
                 continue
             last_candle = candle_id
 
-            price = float(row["close"])
             position_before_exit = dict(broker.state["position"]) if broker.state["position"] else None
             exit_reason = broker.check_exit(float(row["low"]), float(row["high"]), price)
             if exit_reason:
