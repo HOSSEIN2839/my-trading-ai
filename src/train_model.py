@@ -12,11 +12,14 @@ from pathlib import Path
 import ccxt
 import joblib
 import pandas as pd
+from dotenv import load_dotenv
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, balanced_accuracy_score
 
 from src.market import add_indicators
 from src.learning import FEATURES, make_features, DEFAULT_MODEL_PATH
+
+load_dotenv()
 
 SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
 TIMEFRAME = os.getenv("TIMEFRAME", "15m")
