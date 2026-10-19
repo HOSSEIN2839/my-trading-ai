@@ -33,6 +33,18 @@ class PaperBroker:
         pos = self.state["position"]
         return float(self.state["balance"]) + (float(pos["quantity"]) * mark_price if pos else 0.0)
 
+    def record_market_price(self, price: float, symbol: str, timeframe: str, timestamp: str | None = None):
+        """Persist the latest closed-candle snapshot for monitoring and dashboard display."""
+        if price <= 0:
+            raise ValueError("market price must be positive")
+        self.state["last_market"] = {
+            "price": float(price),
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "timestamp": timestamp or datetime.now(timezone.utc).isoformat(),
+        }
+        self._save()
+
     def roll_day(self, mark_price: float | None = None):
         """Start a new UTC daily-loss window using current marked-to-market equity.
 
