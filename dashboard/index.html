@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>مرکز کنترل | My Trading AI</title>
+  <style>
+    :root{font-family:Tahoma,"Segoe UI",sans-serif;color:#e8edf7;background:#0b1020;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top right,#192747 0,transparent 40%),#0b1020;min-height:100vh}
+    .shell{max-width:1200px;margin:auto;padding:28px 18px 44px}.top{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:26px}
+    .brand{display:flex;gap:13px;align-items:center}.mark{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:#7c5cff;color:white;font-size:24px;font-weight:800;box-shadow:0 8px 28px #7c5cfc33}
+    h1{font-size:22px;margin:0 0 6px}p{margin:0;color:#9ba9c3;font-size:13px;line-height:1.8}
+    .status{display:flex;align-items:center;gap:9px;background:#111a2e;border:1px solid #293650;border-radius:999px;padding:10px 14px;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:50%;background:#f0b44d;box-shadow:0 0 0 4px #f0b44d18}.dot.ok{background:#38d39f;box-shadow:0 0 0 4px #38d39f18}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.card{background:linear-gradient(145deg,#151e32,#111827);border:1px solid #27334a;border-radius:18px;padding:19px;min-width:0}
+    .metric-label{font-size:12px;color:#9ba9c3;margin-bottom:13px}.metric{font-size:25px;font-weight:750;letter-spacing:-.4px;overflow-wrap:anywhere}.sub{font-size:11px;color:#8593ad;margin-top:9px}
+    .section{margin-top:18px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}.section-head h2{font-size:15px;margin:0}.tag{font-size:11px;border-radius:8px;padding:6px 9px;background:#192641;color:#aebdf8}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}.position{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #27334a}.position:last-child{border:0}.key{color:#94a2bc;font-size:12px}.value{font-size:13px;font-weight:650;overflow-wrap:anywhere}
+    .table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}th{text-align:right;color:#8f9eb9;font-weight:500;padding:12px 10px;border-bottom:1px solid #2b3650}td{padding:13px 10px;border-bottom:1px solid #202b40}tbody tr:last-child td{border-bottom:0}.pill{display:inline-block;padding:5px 8px;border-radius:7px;background:#27334a;color:#cbd5e8;font-size:11px}.buy{background:#113d34;color:#65e0b3}.sell{background:#44272e;color:#ff9eaa}.hold{background:#3c3420;color:#f1ce7b}
+    .empty{text-align:center;color:#8795af;padding:24px 10px;font-size:12px}.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:20px;color:#74829c;font-size:11px}
+    button{font:inherit;border:1px solid #34425e;background:#172238;color:#dce5f7;border-radius:10px;padding:9px 12px;cursor:pointer}button:hover{background:#22314d}
+    @media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}}@media(max-width:480px){.shell{padding:20px 12px}.metric{font-size:21px}.card{padding:15px}.top{align-items:flex-start}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <div class="brand"><div class="mark">M</div><div><h1>مرکز کنترل ترید هوشمند</h1><p>پایش ربات، حافظه و معاملات شبیه‌سازی‌شده</p></div></div>
+    <div class="status"><span class="dot" id="health-dot"></span><span id="connection">در حال اتصال…</span><span class="tag">فقط Paper Trading</span></div>
+  </header>
+
+  <section class="grid" aria-label="خلاصه حساب">
+    <article class="card"><div class="metric-label">موجودی نقدی مجازی</div><div class="metric" id="balance">—</div><div class="sub">پس از کارمزد معاملات بسته‌شده</div></article>
+    <article class="card"><div class="metric-label">ارزش کل حساب</div><div class="metric" id="equity">—</div><div class="sub">با ارزش‌گذاری آخرین قیمت ذخیره‌شده</div></article>
+    <article class="card"><div class="metric-label">قیمت آخر بازار</div><div class="metric" id="price">—</div><div class="sub" id="market-meta">منتظر داده بازار</div></article>
+    <article class="card"><div class="metric-label">تصمیم‌های ذخیره‌شده</div><div class="metric" id="decision-count">0</div><div class="sub" id="trade-count">معامله ثبت‌شده: 0</div></article>
+  </section>
+
+  <section class="section split">
+    <article class="card"><div class="section-head"><h2>وضعیت پوزیشن</h2><span class="tag" id="position-tag">بدون پوزیشن</span></div><div id="position-details"><div class="empty">هنوز وضعیت حساب دریافت نشده است.</div></div></article>
+    <article class="card"><div class="section-head"><h2>حافظه و یادگیری</h2><span class="tag">SQLite</span></div><div id="memory-details"><div class="empty">در انتظار اتصال به حافظه</div></div><p style="margin-top:12px">ذخیره‌شدن تجربه‌ها به‌معنای آموزش خودکار مدل نیست؛ چرخه آموزش و ارزیابی جداگانه توسعه داده خواهد شد.</p></article>
+  </section>
+
+  <section class="section card"><div class="section-head"><h2>آخرین معاملات</h2><button id="refresh">به‌روزرسانی</button></div><div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>نوع</th><th>قیمت</th><th>مقدار</th><th>کارمزد</th><th>سود/زیان تحقق‌یافته</th><th>دلیل</th></tr></thead><tbody id="trades"><tr><td colspan="8" class="empty">در انتظار داده</td></tr></tbody></table></div></section>
+
+  <section class="section card"><div class="section-head"><h2>آخرین تصمیم‌های مدل</h2><span class="tag">ثبت‌شده در حافظه</span></div><div class="table-wrap"><table><thead><tr><th>زمان</th><th>بازار</th><th>بازه</th><th>تصمیم</th><th>قیمت</th><th>اطمینان مدل</th><th>نتیجه</th></tr></thead><tbody id="decisions"><tr><td colspan="7" class="empty">در انتظار داده</td></tr></tbody></table></div></section>
+  <footer class="foot"><span>رابط فقط‌خواندنی؛ هیچ دکمه‌ای سفارش معامله ارسال نمی‌کند.</span><span id="updated">آخرین به‌روزرسانی: —</span></footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = (v, digits=2) => v == null || !Number.isFinite(Number(v)) ? "—" : Number(v).toLocaleString("fa-IR",{maximumFractionDigits:digits,minimumFractionDigits:0});
+const dateFmt = v => { if(!v) return "—"; const d=new Date(v); return Number.isNaN(d.getTime())?String(v):d.toLocaleString("fa-IR",{dateStyle:"short",timeStyle:"short"}); };
+const cell = (row, value, className="") => { const td=document.createElement("td"); td.textContent=value ?? "—"; if(className) td.className=className; row.appendChild(td); return td; };
+const decisionClass = v => v==="BUY"?"buy":v==="SELL"?"sell":"hold";
+function fillRows(id, items, cols, emptyText){
+ const body=$(id); body.replaceChildren();
+ if(!items.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=cols;td.className="empty";td.textContent=emptyText;tr.appendChild(td);body.appendChild(tr);return;}
+ items.forEach(item=>{const tr=document.createElement("tr");colsFor(item).forEach(([value,klass])=>cell(tr,value,klass));body.appendChild(tr);});
+ function colsFor(item){return id==="trades"?[
+ [dateFmt(item.timestamp)],[item.symbol],[item.side,decisionClass(item.side)],[fmt(item.price,6)],[fmt(item.quantity,8)],[fmt(item.fee,6)],[item.realized_pnl==null?"—":fmt(item.realized_pnl,4)],[item.reason]
+ ]:[
+ [dateFmt(item.timestamp)],[item.symbol],[item.timeframe],[item.decision,decisionClass(item.decision)],[fmt(item.price,6)],[item.confidence==null?"—":fmt(Number(item.confidence)*100,1)+"٪"],[item.outcome?.exit_reason || (item.outcome?"ثبت نتیجه":"باز/بدون نتیجه")]
+ ];}
+}
+function renderPosition(pos){
+ const box=$("position-details");box.replaceChildren();
+ if(!pos){$("position-tag").textContent="بدون پوزیشن";const empty=document.createElement("div");empty.className="empty";empty.textContent="در حال حاضر پوزیشن مجازی باز نیست.";box.appendChild(empty);return;}
+ $("position-tag").textContent="پوزیشن باز";
+ [["قیمت ورود",fmt(pos.entry,6)],["مقدار",fmt(pos.quantity,8)],["حد ضرر",fmt(pos.stop,6)],["حد سود",fmt(pos.target,6)]].forEach(([k,v])=>{const row=document.createElement("div");row.className="position";const a=document.createElement("span"),b=document.createElement("span");a.className="key";b.className="value";a.textContent=k;b.textContent=v;row.append(a,b);box.appendChild(row);});
+}
+function renderMemory(mem){
+ const box=$("memory-details");box.replaceChildren();
+ [["تصمیم‌ها",mem.decisions],["معاملات",mem.trades],["الگوهای ثبت‌شده",mem.patterns],["ارزیابی مدل‌ها",mem.evaluations]].forEach(([k,v])=>{const row=document.createElement("div");row.className="position";const a=document.createElement("span"),b=document.createElement("span");a.className="key";b.className="value";a.textContent=k;b.textContent=fmt(v,0);row.append(a,b);box.appendChild(row);});
+}
+async function refresh(){
+ try{
+  const [status,trades,decisions]=await Promise.all(["/api/status","/api/trades?limit=12","/api/decisions?limit=12"].map(url=>fetch(url,{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("API error");return r.json();})));
+  $("health-dot").classList.add("ok");$("connection").textContent=status.state_available?"متصل به داده‌های محلی":"API فعال؛ هنوز داده حساب وجود ندارد";
+  $("balance").textContent=fmt(status.balance)+" USDT";$("equity").textContent=fmt(status.equity)+" USDT";
+  $("price").textContent=status.market?.price?fmt(status.market.price,6):"—";
+  $("market-meta").textContent=status.market?.symbol?status.market.symbol+" · "+status.market.timeframe+" · "+dateFmt(status.market.timestamp):"قیمت هنوز ذخیره نشده";
+  $("decision-count").textContent=fmt(status.memory?.decisions||0,0);$("trade-count").textContent="معامله ثبت‌شده: "+fmt(status.memory?.trades||0,0);
+  renderPosition(status.position);renderMemory(status.memory||{});
+  fillRows("trades",trades.items||[],8,"هنوز معامله‌ای در حافظه ثبت نشده است.");
+  fillRows("decisions",decisions.items||[],7,"هنوز تصمیمی ثبت نشده است.");
+  $("updated").textContent="آخرین به‌روزرسانی: "+new Date().toLocaleTimeString("fa-IR");
+ }catch(e){$("health-dot").classList.remove("ok");$("connection").textContent="اتصال به API برقرار نیست";$("updated").textContent="برای اجرا: python -m src.dashboard";}
+}
+$("refresh").addEventListener("click",refresh);refresh();setInterval(refresh,10000);
+</script>
+</body>
+</html>
