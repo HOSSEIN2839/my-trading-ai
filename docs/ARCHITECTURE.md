@@ -63,3 +63,8 @@
 - The current historical data fetch is limited to one exchange API request and is not yet a paginated, gap-audited multi-year dataset.
 - The dashboard reports persisted runtime state and the latest saved backtest report; it does not control or guarantee that the bot process is running. `/api/integration` checks expected artifacts and basic schema, but does not prove that the bot is currently running or that a model is semantically valid.
 - When no market snapshot exists, equity can only be estimated using the entry price for an open position.
+
+
+## External APIs and future execution modes
+
+The detailed API-provider, credential-separation, UI, and future mode-switch contract is documented in [API_AND_EXECUTION_MODES.md](API_AND_EXECUTION_MODES.md). This is a forward-looking design only: the current bot remains paper-only, the dashboard remains read-only, and no live exchange order adapter or authenticated mutable settings API is implemented. Do not treat a UI switch alone as authorization to place real orders.
