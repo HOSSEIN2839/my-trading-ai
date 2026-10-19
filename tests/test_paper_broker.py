@@ -169,14 +169,6 @@ def test_broker_recovers_interrupted_trade_from_transaction_journal(tmp_path):
 
     # Simulate a process interruption after the trade log and state were changed,
     # but before the transaction journal could be removed.
-    new_state = {
-        **old_state,
-        "balance": 899.9,
-        "position": {"entry": 100, "quantity": 1, "stop": 90, "target": 120},
-    }
-    state_path.write_text(json.dumps(new_state), encoding="utf-8")
-    with trades_path.open("ab") as log_file:
-        log_file.write(b"interrupted,BUY,100,1,0.1,899.9,crash\\n")
     journal_path.write_text(
         json.dumps({
             "old_state": old_state,
@@ -185,6 +177,14 @@ def test_broker_recovers_interrupted_trade_from_transaction_journal(tmp_path):
         }),
         encoding="utf-8",
     )
+    new_state = {
+        **old_state,
+        "balance": 899.9,
+        "position": {"entry": 100, "quantity": 1, "stop": 90, "target": 120},
+    }
+    state_path.write_text(json.dumps(new_state), encoding="utf-8")
+    with trades_path.open("ab") as log_file:
+        log_file.write(b"interrupted,BUY,100,1,0.1,899.9,crash\\n")
 
     recovered = PaperBroker(
         1000,
