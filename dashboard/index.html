@@ -83,6 +83,15 @@ function renderMemory(mem){
  const box=$("memory-details");box.replaceChildren();
  [["تصمیم‌ها",mem.decisions],["معاملات",mem.trades],["الگوهای ثبت‌شده",mem.patterns],["ارزیابی مدل‌ها",mem.evaluations]].forEach(([k,v])=>{const row=document.createElement("div");row.className="position";const a=document.createElement("span"),b=document.createElement("span");a.className="key";b.className="value";a.textContent=k;b.textContent=fmt(v,0);row.append(a,b);box.appendChild(row);});
 }
+function renderBacktest(data){
+ const metrics=data?.metrics||{};
+ const available=Boolean(data?.available && Object.keys(metrics).length);
+ $("backtest-status").textContent=available?"گزارش آماده":"گزارش موجود نیست";
+ $("bt-return").textContent=available?fmt(metrics.net_return_pct,2)+"٪":"—";
+ $("bt-drawdown").textContent=available?fmt(metrics.max_drawdown_pct,2)+"٪":"—";
+ $("bt-winrate").textContent=available?fmt(metrics.win_rate_pct,2)+"٪":"—";
+ $("bt-trades").textContent=available?fmt(metrics.trades,0):"—";
+}
 async function refresh(){
  try{
   const [status,trades,decisions,backtest]=await Promise.all(["/api/status","/api/trades?limit=12","/api/decisions?limit=12","/api/backtest"].map(url=>fetch(url,{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("API error");return r.json();})));
@@ -91,7 +100,7 @@ async function refresh(){
   $("price").textContent=status.market?.price?fmt(status.market.price,6):"—";
   $("market-meta").textContent=status.market?.symbol?status.market.symbol+" · "+status.market.timeframe+" · "+dateFmt(status.market.timestamp):"قیمت هنوز ذخیره نشده";
   $("decision-count").textContent=fmt(status.memory?.decisions||0,0);$("trade-count").textContent="معامله ثبت‌شده: "+fmt(status.memory?.trades||0,0);
-  renderPosition(status.position);renderMemory(status.memory||{});
+  renderPosition(status.position);renderMemory(status.memory||{});renderBacktest(backtest);
   fillRows("trades",trades.items||[],8,"هنوز معامله‌ای در حافظه ثبت نشده است.");
   fillRows("decisions",decisions.items||[],7,"هنوز تصمیمی ثبت نشده است.");
   $("updated").textContent="آخرین به‌روزرسانی: "+new Date().toLocaleTimeString("fa-IR");
