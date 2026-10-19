@@ -18,6 +18,7 @@ from sklearn.metrics import accuracy_score, classification_report, balanced_accu
 
 from src.market import add_indicators
 from src.learning import FEATURES, make_features, DEFAULT_MODEL_PATH
+from src.paths import project_path
 
 load_dotenv()
 
@@ -93,7 +94,7 @@ def main():
     # leave a partially written model file.
     final_model = _new_model()
     final_model.fit(dataset[FEATURES], dataset["label"])
-    model_path = Path(os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
+    model_path = project_path(os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
     model_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = model_path.with_suffix(model_path.suffix + ".tmp")
     joblib.dump({
@@ -111,7 +112,7 @@ def main():
     }, temporary_path)
     temporary_path.replace(model_path)
 
-    report_path = Path("data/training_report.json")
+    report_path = project_path("data/training_report.json")
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2, allow_nan=False), encoding="utf-8")
     print(json.dumps({k: v for k, v in report.items() if k != "classification_report"}, indent=2))
