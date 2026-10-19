@@ -40,3 +40,4 @@ def test_dashboard_returns_empty_lists_when_memory_is_missing(tmp_path):
     client = app.test_client()
     assert client.get("/api/trades").get_json() == {"items": []}
     assert client.get("/api/decisions").get_json() == {"items": []}
+    assert client.get("/api/decisions?limit=invalid").get_json() == {"items": []}
