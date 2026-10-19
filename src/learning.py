@@ -22,8 +22,8 @@ def make_features(df: pd.DataFrame) -> pd.DataFrame:
     return out.replace([float("inf"), float("-inf")], float("nan"))
 
 
-def load_model(path: Path = DEFAULT_MODEL_PATH, *, symbol: str | None = None, timeframe: str | None = None):
-    path = Path(path)
+def load_model(path: Path | None = None, *, symbol: str | None = None, timeframe: str | None = None):
+    path = Path(path or os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
     if not path.exists():
         return None
     try:
