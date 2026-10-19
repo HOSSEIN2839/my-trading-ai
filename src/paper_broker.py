@@ -74,6 +74,13 @@ class PaperBroker:
         }
         self._save()
 
+    def mark_candle_processed(self, candle_id: str):
+        """Persist the last fully processed closed-candle ID across restarts."""
+        if not isinstance(candle_id, str) or not candle_id.strip():
+            raise ValueError("candle_id must be a non-empty string")
+        self.state["last_processed_candle"] = candle_id
+        self._save()
+
     def roll_day(self, mark_price: float | None = None):
         """Start a new UTC daily-loss window using current marked-to-market equity."""
         if mark_price is not None and (not _finite(mark_price) or float(mark_price) <= 0):
