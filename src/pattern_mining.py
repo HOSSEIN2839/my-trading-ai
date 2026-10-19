@@ -137,13 +137,74 @@ def mine_patterns(
                 "research_only": True,
             })
 
+    # Also mine two-feature interactions. All bin boundaries are derived from
+    # training data only; a stricter support floor limits tiny subgroups.
+    feature_bins: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
+    for feature in FEATURES:
+        values = train[feature].to_numpy(dtype=float)
+        edges = np.unique(np.quantile(values, np.linspace(0.0, 1.0, bins + 1)))
+        if len(edges) < 3:
+            continue
+        internal = edges[1:-1]
+        feature_bins[feature] = (
+            edges,
+            np.searchsorted(internal, values, side="right"),
+            np.searchsorted(internal, test[feature].to_numpy(dtype=float), side="right"),
+        )
+
+    interaction_support = max(min_train_support, 30)
+    feature_names = list(feature_bins)
+    for left_index, left_name in enumerate(feature_names):
+        left_edges, left_train_bin, left_test_bin = feature_bins[left_name]
+        for right_name in feature_names[left_index + 1:]:
+            right_edges, right_train_bin, right_test_bin = feature_bins[right_name]
+            for left_bin in range(len(left_edges) - 1):
+                for right_bin in range(len(right_edges) - 1):
+                    train_mask = (left_train_bin == left_bin) & (right_train_bin == right_bin)
+                    support = int(train_mask.sum())
+                    if support < interaction_support:
+                        continue
+                    train_returns = train.loc[train_mask, "_forward_return"].to_numpy(dtype=float)
+                    mean_return = float(np.mean(train_returns))
+                    if mean_return >= threshold:
+                        direction = "BUY"
+                    elif mean_return <= -threshold:
+                        direction = "SELL"
+                    else:
+                        continue
+                    test_mask = (left_test_bin == left_bin) & (right_test_bin == right_bin)
+                    test_support = int(test_mask.sum())
+                    if test_support < min_test_support:
+                        continue
+                    test_returns = test.loc[test_mask, "_forward_return"].to_numpy(dtype=float)
+                    oriented = test_returns if direction == "BUY" else -test_returns
+                    wins = int(np.count_nonzero(oriented > 0))
+                    candidates.append({
+                        "feature": f"{left_name} + {right_name}",
+                        "features": [left_name, right_name],
+                        "bins": [int(left_bin), int(right_bin)],
+                        "bounds": [
+                            [float(left_edges[left_bin]), float(left_edges[left_bin + 1])],
+                            [float(right_edges[right_bin]), float(right_edges[right_bin + 1])],
+                        ],
+                        "direction": direction,
+                        "train_support": support,
+                        "train_mean_forward_return": mean_return,
+                        "test_support": test_support,
+                        "test_mean_forward_return": float(np.mean(test_returns)),
+                        "test_directional_hit_rate": wins / test_support,
+                        "test_hit_rate_wilson_95_lower": _wilson_lower(wins, test_support),
+                        "test_mean_oriented_return": float(np.mean(oriented)),
+                        "research_only": True,
+                    })
+
     candidates.sort(
         key=lambda item: (item["test_mean_oriented_return"], item["test_support"]),
         reverse=True,
     )
     return {
         "schema_version": 1,
-        "method": "single-feature quantile regimes; chronological holdout; purged forward labels",
+        "method": "single- and pairwise-feature quantile regimes; chronological holdout; purged forward labels",
         "candles_received": int(len(frame)),
         "complete_rows": int(len(data)),
         "train_rows": int(len(train)),
