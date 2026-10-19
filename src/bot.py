@@ -69,7 +69,14 @@ def main():
             broker.roll_day(price)
             candle_id = str(row["timestamp"])
             position_before_exit = dict(broker.state["position"]) if broker.state["position"] else None
-            exit_reason = broker.check_exit(float(row["low"]), float(row["high"]), price)
+            # Never evaluate an older signal candle against a position that only
+            # entered at the following candle open (important after process restart).
+            entry_candle_id = position_before_exit.get("entry_candle_id") if position_before_exit else None
+            may_check_position = not entry_candle_id or candle_id >= entry_candle_id
+            exit_reason = (
+                broker.check_exit(float(row["low"]), float(row["high"]), price)
+                if may_check_position else None
+            )
             if exit_reason:
                 logging.info("خروج شبیه‌سازی‌شده: %s", exit_reason)
                 if position_before_exit:
@@ -145,7 +152,7 @@ def main():
                 stop = execution_price - STOP_ATR * atr
                 target = execution_price + RR * (execution_price - stop)
                 qty = position_size(cash_balance, execution_price, stop, RISK, MAX_POSITION)
-                if broker.buy(execution_price, qty, stop, target, f"AI_enabled:{ai.get('enabled', True)} ML:{ml['confidence']:.2f}", metadata={"decision_id": decision_id}):
+                if broker.buy(execution_price, qty, stop, target, f"AI_enabled:{ai.get('enabled', True)} ML:{ml['confidence']:.2f}", metadata={"decision_id": decision_id, "entry_candle_id": str(candles.iloc[-1]["timestamp"])}):
                     memory.record_trade(symbol=SYMBOL, side="BUY", price=execution_price, quantity=qty,
                                         fee=execution_price * qty * FEE, reason="model_signal",
                                         details={"stop": stop, "target": target, "ml_confidence": ml["confidence"], "source": "paper_broker"})
