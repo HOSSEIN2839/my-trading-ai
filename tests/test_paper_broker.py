@@ -59,6 +59,42 @@ def test_sell_all_clears_position_and_accounts_for_fee(tmp_path):
     assert not broker.sell_all(110, "already closed")
 
 
+def test_buy_rolls_back_state_and_csv_when_state_save_fails(tmp_path, monkeypatch):
+    broker = make_broker(tmp_path)
+    original_balance = broker.state["balance"]
+    original_csv = broker.trades_path.read_bytes()
+
+    def fail_save():
+        raise OSError("simulated disk write failure")
+
+    monkeypatch.setattr(broker, "_save", fail_save)
+    with pytest.raises(OSError, match="simulated disk write failure"):
+        broker.buy(100, 1, 90, 120, "write failure")
+
+    assert broker.state["balance"] == original_balance
+    assert broker.state["position"] is None
+    assert broker.trades_path.read_bytes() == original_csv
+
+
+def test_sell_rolls_back_state_and_csv_when_state_save_fails(tmp_path, monkeypatch):
+    broker = make_broker(tmp_path)
+    assert broker.buy(100, 1, 90, 120, "open position")
+    original_balance = broker.state["balance"]
+    original_position = broker.state["position"].copy()
+    original_csv = broker.trades_path.read_bytes()
+
+    def fail_save():
+        raise OSError("simulated disk write failure")
+
+    monkeypatch.setattr(broker, "_save", fail_save)
+    with pytest.raises(OSError, match="simulated disk write failure"):
+        broker.sell_all(110, "write failure")
+
+    assert broker.state["balance"] == original_balance
+    assert broker.state["position"] == original_position
+    assert broker.trades_path.read_bytes() == original_csv
+
+
 def test_broker_rejects_non_finite_orders_and_market_prices(tmp_path):
     broker = make_broker(tmp_path)
     assert not broker.buy(float("nan"), 1, 90, 120, "nan price")

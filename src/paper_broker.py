@@ -117,6 +117,35 @@ class PaperBroker:
         with self.trades_path.open("a", newline="", encoding="utf-8") as f:
             csv.writer(f).writerow([datetime.now(timezone.utc).isoformat(), side, price, qty, fee, self.state["balance"], reason])
 
+    def _commit_trade(self, side, price, quantity, fee, reason, *, balance, position):
+        """Persist a simulated trade or roll back in-memory and CSV changes on I/O failure.
+
+        The state file is replaced atomically by _save(). If logging or state persistence
+        raises, restore the previous in-memory state and truncate any partially appended
+        CSV record so a caught exception cannot leave the running process inconsistent.
+        """
+        previous_state = self.state.copy()
+        csv_existed = self.trades_path.exists()
+        csv_size = self.trades_path.stat().st_size if csv_existed else 0
+        self.state["balance"] = balance
+        self.state["position"] = position
+        try:
+            self._log(side, price, quantity, fee, reason)
+            self._save()
+        except BaseException:
+            self.state = previous_state
+            try:
+                if csv_existed:
+                    with self.trades_path.open("r+b") as log_file:
+                        log_file.truncate(csv_size)
+                elif self.trades_path.exists():
+                    self.trades_path.unlink()
+            except OSError as rollback_error:
+                raise RuntimeError(
+                    "paper trade persistence failed and CSV rollback also failed; inspect state and trades log"
+                ) from rollback_error
+            raise
+
     def buy(self, price: float, quantity: float, stop: float, target: float, reason: str, metadata: dict | None = None) -> bool:
         if not all(_finite(v) for v in (price, quantity, stop, target)):
             return False
@@ -140,10 +169,11 @@ class PaperBroker:
                 json.dumps(metadata, allow_nan=False)
             except (TypeError, ValueError):
                 return False
-        self.state["balance"] -= cost + fee
-        self.state["position"] = {"entry": price, "quantity": quantity, "stop": stop, "target": target, **(metadata or {})}
-        self._log("BUY", price, quantity, fee, reason)
-        self._save()
+        self._commit_trade(
+            "BUY", price, quantity, fee, reason,
+            balance=float(self.state["balance"]) - cost - fee,
+            position={"entry": price, "quantity": quantity, "stop": stop, "target": target, **(metadata or {})},
+        )
         return True
 
     def sell_all(self, price: float, reason: str) -> bool:
@@ -157,10 +187,11 @@ class PaperBroker:
         fee = proceeds * self.fee_rate
         if not _finite(proceeds - fee):
             return False
-        self.state["balance"] += proceeds - fee
-        self._log("SELL", price, pos["quantity"], fee, reason)
-        self.state["position"] = None
-        self._save()
+        self._commit_trade(
+            "SELL", price, float(pos["quantity"]), fee, reason,
+            balance=float(self.state["balance"]) + proceeds - fee,
+            position=None,
+        )
         return True
 
     def check_exit(self, low: float, high: float, close: float) -> str | None:
