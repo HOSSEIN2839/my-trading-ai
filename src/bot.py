@@ -152,6 +152,8 @@ def main():
                     logging.info("خرید مجازی: fill=%.4f qty=%.8f stop=%.4f target=%.4f", execution_price, qty, stop, target)
                 else:
                     logging.info("خرید مجازی رد شد (موجودی/اندازه/پوزیشن).")
+            broker.mark_candle_processed(candle_id)
+            last_candle = candle_id
         except KeyboardInterrupt:
             logging.info("ربات متوقف شد.")
             break
