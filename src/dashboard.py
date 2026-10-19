@@ -106,6 +106,20 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
         )
         return jsonify({"items": rows})
 
+    @app.get("/api/backtest")
+    def backtest():
+        report_path = Path(os.getenv("BACKTEST_REPORT_PATH", "data/backtest_report.json"))
+        if not report_path.is_absolute():
+            report_path = PROJECT_ROOT / report_path
+        report = _read_json(report_path)
+        metrics = report.get("metrics", {})
+        return jsonify({
+            "available": isinstance(metrics, dict) and bool(metrics),
+            "metrics": metrics if isinstance(metrics, dict) else {},
+            "trades": report.get("trades", []) if isinstance(report.get("trades", []), list) else [],
+            "equity_curve": report.get("equity_curve", []) if isinstance(report.get("equity_curve", []), list) else [],
+        })
+
     @app.get("/api/decisions")
     def decisions():
         limit = _request_limit()
