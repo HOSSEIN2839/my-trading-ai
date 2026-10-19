@@ -121,6 +121,81 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
             "memory": {item["name"]: item["count"] for item in summary},
         })
 
+    @app.get("/api/integration")
+    def integration():
+        """Read-only diagnostic of the files and stores expected by the paper system."""
+        checks: list[dict[str, str]] = []
+
+        mode_ok = os.getenv("MODE", "paper").strip().lower() == "paper"
+        checks.append({
+            "id": "mode", "label": "حالت معامله",
+            "status": "ok" if mode_ok else "error",
+            "detail": "فقط شبیه‌سازی فعال است" if mode_ok else "MODE باید paper باشد",
+        })
+
+        state_exists = state_file.is_file()
+        state_data = _read_json(state_file) if state_exists else {}
+        state_ok = state_exists and bool(state_data)
+        checks.append({
+            "id": "state", "label": "وضعیت حساب",
+            "status": "ok" if state_ok else "missing",
+            "detail": "فایل وضعیت قابل خواندن است" if state_ok else "هنوز فایل وضعیت معتبر موجود نیست",
+        })
+
+        memory_ok = False
+        missing_tables: list[str] = []
+        if memory_file.is_file():
+            try:
+                uri = memory_file.resolve().as_uri() + "?mode=ro"
+                with sqlite3.connect(uri, uri=True, timeout=2) as conn:
+                    tables = {row[0] for row in conn.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'"
+                    ).fetchall()}
+                required = {"decisions", "trades", "patterns", "evaluations", "model_versions"}
+                missing_tables = sorted(required - tables)
+                memory_ok = not missing_tables
+            except sqlite3.Error:
+                memory_ok = False
+        checks.append({
+            "id": "memory", "label": "حافظه SQLite",
+            "status": "ok" if memory_ok else ("error" if memory_file.exists() else "missing"),
+            "detail": "پایگاه داده و جدول‌های اصلی آماده‌اند" if memory_ok else (
+                "جدول‌های ناقص: " + ", ".join(missing_tables) if missing_tables else
+                "پایگاه داده قابل خواندن نیست" if memory_file.exists() else "پایگاه داده هنوز ساخته نشده است"
+            ),
+        })
+
+        trades_file = project_path(os.getenv("PAPER_TRADES_PATH", "data/trades.csv"))
+        ledger_ok = False
+        if trades_file.is_file():
+            try:
+                with trades_file.open("r", encoding="utf-8", newline="") as stream:
+                    header = stream.readline().strip().split(",")
+                ledger_ok = header == ["time_utc", "side", "price", "quantity", "fee", "balance", "reason"]
+            except OSError:
+                ledger_ok = False
+        checks.append({
+            "id": "ledger", "label": "دفتر معاملات CSV",
+            "status": "ok" if ledger_ok else ("error" if trades_file.exists() else "missing"),
+            "detail": "سرستون‌های دفتر معاملات معتبرند" if ledger_ok else
+                "فایل موجود است اما سرستون‌ها معتبر نیستند" if trades_file.exists() else
+                "دفتر معاملات هنوز ساخته نشده است",
+        })
+
+        model_file = project_path(os.getenv("MODEL_PATH", "data/model.joblib"))
+        model_ok = model_file.is_file() and model_file.stat().st_size > 0
+        checks.append({
+            "id": "model", "label": "فایل مدل ML",
+            "status": "ok" if model_ok else "missing",
+            "detail": "فایل مدل موجود است؛ سازگاری آن هنگام بارگذاری بررسی می‌شود" if model_ok else
+                "مدل موجود نیست؛ برای اجرای ربات باید آموزش داده شود",
+        })
+
+        errors = sum(item["status"] == "error" for item in checks)
+        missing = sum(item["status"] == "missing" for item in checks)
+        overall = "error" if errors else "warning" if missing else "ok"
+        return jsonify({"overall": overall, "checks": checks})
+
     @app.get("/api/trades")
     def trades():
         limit = _request_limit()
