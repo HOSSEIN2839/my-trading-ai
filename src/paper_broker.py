@@ -7,6 +7,8 @@ import math
 from pathlib import Path
 from datetime import datetime, timezone
 
+from src.paths import project_path
+
 
 def _finite(value) -> bool:
     try:
@@ -21,8 +23,8 @@ class PaperBroker:
             raise ValueError("initial_balance must be finite and positive")
         if not _finite(fee_rate) or not 0 <= float(fee_rate) < 1:
             raise ValueError("fee_rate must be finite and in [0, 1)")
-        self.state_path = Path(state_path)
-        self.trades_path = Path(trades_path)
+        self.state_path = project_path(state_path)
+        self.trades_path = project_path(trades_path)
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
         self.fee_rate = float(fee_rate)
         if self.state_path.exists():
