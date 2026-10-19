@@ -91,6 +91,25 @@ def test_buy_rejects_non_json_or_non_finite_metadata_before_mutation(tmp_path):
     assert broker.state["position"] is None
 
 
+@pytest.mark.parametrize(
+    "state",
+    [
+        {"balance": 1000, "start_balance": 0, "day": "2026-10-18", "position": None},
+        {"balance": 1000, "start_balance": 1000, "day": "yesterday", "position": None},
+        {"balance": 1000, "start_balance": 1000, "position": None},
+        {"balance": 1000, "start_balance": 1000, "day": "2026-10-18",
+         "position": None, "last_processed_candle": ""},
+    ],
+)
+def test_broker_rejects_invalid_persisted_state_metadata(tmp_path, state):
+    import json
+
+    state_path = tmp_path / "paper_state.json"
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    with pytest.raises(ValueError):
+        PaperBroker(1000, state_path=state_path, trades_path=tmp_path / "trades.csv")
+
+
 def test_broker_rejects_corrupt_persisted_position(tmp_path):
     state_path = tmp_path / "paper_state.json"
     state_path.write_text(

@@ -44,6 +44,20 @@ class PaperBroker:
         for key in ("balance", "start_balance"):
             if key not in self.state or not _finite(self.state[key]) or float(self.state[key]) < 0:
                 raise ValueError(f"paper state has invalid {key}")
+        if float(self.state["start_balance"]) <= 0:
+            raise ValueError("paper state has invalid start_balance")
+        day = self.state.get("day")
+        if not isinstance(day, str):
+            raise ValueError("paper state has invalid day")
+        try:
+            if datetime.strptime(day, "%Y-%m-%d").date().isoformat() != day:
+                raise ValueError
+        except ValueError as exc:
+            raise ValueError("paper state has invalid day") from exc
+        if "last_processed_candle" in self.state:
+            candle_id = self.state["last_processed_candle"]
+            if not isinstance(candle_id, str) or not candle_id.strip():
+                raise ValueError("paper state has invalid last_processed_candle")
         pos = self.state.get("position")
         if pos is not None:
             if not isinstance(pos, dict):
