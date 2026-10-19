@@ -78,3 +78,16 @@ def test_broker_rejects_corrupt_persisted_position(tmp_path):
     )
     with pytest.raises(ValueError):
         PaperBroker(1000, state_path=state_path, trades_path=tmp_path / "trades.csv")
+
+
+def test_last_processed_candle_survives_restart(tmp_path):
+    broker = make_broker(tmp_path)
+    candle_id = "2026-10-19T10:15:00+00:00"
+    broker.mark_candle_processed(candle_id)
+
+    reloaded = PaperBroker(
+        1000,
+        state_path=tmp_path / "paper_state.json",
+        trades_path=tmp_path / "trades.csv",
+    )
+    assert reloaded.state["last_processed_candle"] == candle_id
