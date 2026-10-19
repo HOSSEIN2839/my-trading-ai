@@ -134,12 +134,19 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
         })
 
         state_exists = state_file.is_file()
-        state_data = _read_json(state_file) if state_exists else {}
-        state_ok = state_exists and bool(state_data)
+        state_valid = False
+        if state_exists:
+            try:
+                parsed_state = json.loads(state_file.read_text(encoding="utf-8"))
+                state_valid = isinstance(parsed_state, dict) and bool(parsed_state)
+            except (OSError, json.JSONDecodeError):
+                state_valid = False
         checks.append({
             "id": "state", "label": "وضعیت حساب",
-            "status": "ok" if state_ok else "missing",
-            "detail": "فایل وضعیت قابل خواندن است" if state_ok else "هنوز فایل وضعیت معتبر موجود نیست",
+            "status": "ok" if state_valid else ("error" if state_exists else "missing"),
+            "detail": "فایل وضعیت قابل خواندن است" if state_valid else
+                "فایل وضعیت وجود دارد اما JSON معتبر نیست" if state_exists else
+                "هنوز فایل وضعیت ساخته نشده است",
         })
 
         memory_ok = False
