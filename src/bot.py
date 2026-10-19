@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
 import time
 from dotenv import load_dotenv
@@ -31,7 +32,14 @@ FEE = float(os.getenv("TAKER_FEE", "0.001"))
 def main():
     if os.getenv("MODE", "paper").lower() != "paper":
         raise SystemExit("این نسخه فقط MODE=paper را پشتیبانی می‌کند؛ معامله واقعی غیرفعال است.")
-    model = load_model()
+    config_values = (RISK, MAX_DAILY_LOSS, MAX_POSITION, STOP_ATR, RR, FEE, float(os.getenv("INITIAL_BALANCE", "1000")))
+    if not all(math.isfinite(value) for value in config_values):
+        raise SystemExit("تنظیمات عددی باید مقادیر محدود و معتبر داشته باشند.")
+    if not 0 < RISK <= 1 or not 0 < MAX_POSITION <= 1 or not 0 < MAX_DAILY_LOSS <= 1:
+        raise SystemExit("RISK_PER_TRADE، MAX_POSITION_FRACTION و MAX_DAILY_LOSS باید بین صفر و یک باشند.")
+    if STOP_ATR <= 0 or RR <= 0 or not 0 <= FEE < 1 or config_values[-1] <= 0:
+        raise SystemExit("تنظیمات حد ضرر، نسبت سود به ریسک، کارمزد یا موجودی اولیه نامعتبر است.")
+    model = load_model(symbol=SYMBOL, timeframe=TIMEFRAME)
     if model is None:
         raise SystemExit("مدل یادگیری پیدا نشد. ابتدا دستور python -m src.train_model را اجرا کن.")
     broker = PaperBroker(
