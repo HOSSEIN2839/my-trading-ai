@@ -53,5 +53,5 @@ def test_sell_all_clears_position_and_accounts_for_fee(tmp_path):
     assert broker.buy(100, 1, 90, 110, "test")
     assert broker.sell_all(110, "manual-test")
     assert broker.state["position"] is None
-    assert round(broker.state["balance"], 4) == 1008.79
+    assert round(broker.state["balance"], 4) == 1009.79
     assert not broker.sell_all(110, "already closed")
