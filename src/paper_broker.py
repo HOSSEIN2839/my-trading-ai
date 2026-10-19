@@ -33,11 +33,20 @@ class PaperBroker:
         pos = self.state["position"]
         return float(self.state["balance"]) + (float(pos["quantity"]) * mark_price if pos else 0.0)
 
-    def roll_day(self):
+    def roll_day(self, mark_price: float | None = None):
+        """Start a new UTC daily-loss window using current marked-to-market equity.
+
+        When mark_price is omitted, entry price is used as a compatibility fallback.
+        The trading loop should pass the latest closed candle price.
+        """
         today = datetime.now(timezone.utc).date().isoformat()
         if self.state["day"] != today:
             pos = self.state["position"]
-            baseline = float(self.state["balance"]) + (float(pos["quantity"]) * float(pos["entry"]) if pos else 0.0)
+            position_value = 0.0
+            if pos:
+                valuation_price = float(mark_price) if mark_price is not None else float(pos["entry"])
+                position_value = float(pos["quantity"]) * valuation_price
+            baseline = float(self.state["balance"]) + position_value
             self.state["day"] = today
             self.state["start_balance"] = baseline
             self._save()
@@ -51,6 +60,8 @@ class PaperBroker:
         fee = cost * self.fee_rate
         if self.state["position"] is not None or quantity <= 0 or cost + fee > self.state["balance"]:
             return False
+        if price <= 0 or stop <= 0 or stop >= price or target <= price:
+            return False
         self.state["balance"] -= cost + fee
         self.state["position"] = {"entry": price, "quantity": quantity, "stop": stop, "target": target, **(metadata or {})}
         self._log("BUY", price, quantity, fee, reason)
@@ -59,7 +70,7 @@ class PaperBroker:
 
     def sell_all(self, price: float, reason: str) -> bool:
         pos = self.state["position"]
-        if not pos:
+        if not pos or price <= 0:
             return False
         proceeds = price * pos["quantity"]
         fee = proceeds * self.fee_rate
