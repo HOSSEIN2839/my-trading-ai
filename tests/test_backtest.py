@@ -72,3 +72,23 @@ def test_no_trade_metrics_are_finite_and_json_friendly():
     assert result["metrics"]["trades"] == 0
     assert result["metrics"]["profit_factor"] == 0.0
     assert result["metrics"]["net_return_pct"] == 0.0
+
+
+def test_backtest_rejects_unordered_timestamps_and_non_finite_values():
+    frame = candles([
+        (100, 101, 99, 100, "HOLD"),
+        (100, 101, 99, 100, "HOLD"),
+        (100, 101, 99, 100, "HOLD"),
+    ])
+    frame.loc[1, "timestamp"] = frame.loc[0, "timestamp"] - pd.Timedelta(minutes=15)
+    with pytest.raises(ValueError, match="ordered"):
+        run_backtest(frame, signal)
+
+    frame = candles([
+        (100, 101, 99, 100, "HOLD"),
+        (100, 101, 99, 100, "HOLD"),
+        (100, 101, 99, 100, "HOLD"),
+    ])
+    frame.loc[1, "close"] = float("inf")
+    with pytest.raises(ValueError, match="non-finite"):
+        run_backtest(frame, signal)
