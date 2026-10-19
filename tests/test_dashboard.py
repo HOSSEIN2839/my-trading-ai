@@ -105,7 +105,7 @@ def test_integration_diagnostics_report_ready_components(tmp_path, monkeypatch):
 
     assert payload["overall"] == "ok"
     assert {item["id"]: item["status"] for item in payload["checks"]} == {
-        "mode": "ok", "state": "ok", "memory": "ok", "ledger": "ok", "model": "ok"
+        "mode": "ok", "state": "ok", "memory": "ok", "ledger": "ok", "ledger_sync": "ok", "model": "ok"
     }
 
 
@@ -123,6 +123,7 @@ def test_integration_diagnostics_warn_when_runtime_artifacts_are_missing(tmp_pat
     assert checks["state"] == "missing"
     assert checks["memory"] == "missing"
     assert checks["ledger"] == "missing"
+    assert checks["ledger_sync"] == "missing"
     assert checks["model"] == "missing"
 
 
@@ -138,3 +139,29 @@ def test_integration_diagnostics_flag_corrupt_state_as_error(tmp_path, monkeypat
     assert payload["overall"] == "error"
     assert checks["state"]["status"] == "error"
     assert "JSON" in checks["state"]["detail"]
+
+
+def test_integration_diagnostics_detect_trade_ledger_mismatch(tmp_path, monkeypatch):
+    state_path = tmp_path / "paper_state.json"
+    state_path.write_text(json.dumps({"balance": 1000, "start_balance": 1000, "position": None}), encoding="utf-8")
+    memory_path = tmp_path / "memory.sqlite3"
+    with TradingMemory(memory_path):
+        pass
+    trades_path = tmp_path / "trades.csv"
+    trades_path.write_text(
+        "time_utc,side,price,quantity,fee,balance,reason\\n"
+        "2026-10-19T10:00:00+00:00,BUY,100,1,0.1,899.9,test\\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("MODE", "paper")
+    monkeypatch.setenv("PAPER_TRADES_PATH", str(trades_path))
+    monkeypatch.setenv("MODEL_PATH", str(tmp_path / "model.joblib"))
+
+    app = create_app(state_path=state_path, memory_path=memory_path)
+    payload = app.test_client().get("/api/integration").get_json()
+    checks = {item["id"]: item for item in payload["checks"]}
+
+    assert payload["overall"] == "warning"
+    assert checks["ledger_sync"]["status"] == "warning"
+    assert "CSV" in checks["ledger_sync"]["detail"]
+    assert "SQLite" in checks["ledger_sync"]["detail"]
