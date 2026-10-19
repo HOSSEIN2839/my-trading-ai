@@ -19,7 +19,7 @@
 | `src/paper_broker.py` | Simulate long-only spot orders, fees, stops/targets, account state | Connect to a live exchange |
 | `src/memory.py` | Persist decisions, trade records, outcomes, patterns and model evaluations | Decide whether an order is allowed |
 | `src/bot.py` | Orchestrate the runtime and connect components | Bypass risk checks or enable live mode |
-| `src/dashboard.py` | Expose read-only JSON views over persisted state | Change account state or place orders |
+| `src/dashboard.py` | Expose read-only JSON views and integration diagnostics over persisted state | Change account state or place orders |
 | `src/paths.py` | Resolve relative data/model/report paths from the repository root | Hold business logic or trading state |
 | `dashboard/index.html` | Render dashboard data from the API | Implement trading rules or write directly to SQLite |
 
@@ -30,7 +30,7 @@
 3. The broker rolls the UTC daily-loss window using marked-to-market equity and persists the last processed closed-candle ID to reduce duplicate decisions after restarts.
 4. The bot evaluates exits from the last closed candle, checks the daily loss guard, and combines technical, ML, and optional AI signals. Paper entries and signal exits use the next candle open, not the signal candle close.
 5. Approved paper actions go through `PaperBroker`; decisions and simulated trades are written to `TradingMemory`.
-6. The dashboard reads the persisted broker state and SQLite memory via `/api/status`, `/api/trades`, and `/api/decisions`.
+6. The dashboard reads the persisted broker state and SQLite memory via `/api/status`, `/api/trades`, and `/api/decisions`; `/api/integration` checks the paper-mode flag and the presence/basic structure of the state file, SQLite tables, CSV ledger, and ML artifact.
 7. The historical backtest evaluates a signal at candle close and executes it at the next candle open; it applies fees and adverse slippage on both legs, includes costs in risk sizing, and resolves stop/target ambiguity conservatively.
 
 ## State and data contracts
@@ -59,5 +59,5 @@
 - Cross-file persistence (JSON broker state, CSV log, and SQLite memory) is not yet a single atomic transaction; a process crash between writes can leave the ledger and memory temporarily inconsistent.
 - The first cost-aware backtest is a technical-signal baseline; the exact combined ML/AI runtime policy and walk-forward evaluation are not yet simulated.
 - The current historical data fetch is limited to one exchange API request and is not yet a paginated, gap-audited multi-year dataset.
-- The dashboard reports persisted runtime state and the latest saved backtest report; it does not control or guarantee that the bot process is running.
+- The dashboard reports persisted runtime state and the latest saved backtest report; it does not control or guarantee that the bot process is running. `/api/integration` checks expected artifacts and basic schema, but does not prove that the bot is currently running or that a model is semantically valid.
 - When no market snapshot exists, equity can only be estimated using the entry price for an open position.
