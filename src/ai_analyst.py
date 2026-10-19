@@ -33,7 +33,7 @@ def analyze_market(symbol: str, timeframe: str, row, technical: str) -> dict:
         "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
     }
     try:
-        response = requests.post(url, params={"key": api_key}, json=payload, timeout=25)
+        response = requests.post(url, headers={"x-goog-api-key": api_key}, json=payload, timeout=25)
         response.raise_for_status()
         body = response.json()["candidates"][0]["content"]["parts"][0]["text"]
         result = json.loads(body)
