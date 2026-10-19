@@ -6,6 +6,7 @@ This is research tooling only; it never sends exchange orders.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Callable
 
@@ -68,6 +69,14 @@ def run_backtest(
     following candle open. Stops/targets use candle high/low; if both are hit,
     the stop is assumed first. Fees and adverse slippage are charged on both legs.
     """
+    parameters = (initial_balance, fee_rate, slippage_rate, risk_fraction,
+                  max_position_fraction, stop_atr_multiplier, reward_risk)
+    try:
+        finite_parameters = all(math.isfinite(float(value)) for value in parameters)
+    except (TypeError, ValueError, OverflowError):
+        finite_parameters = False
+    if not finite_parameters:
+        raise ValueError("backtest parameters must be finite numbers")
     if initial_balance <= 0:
         raise ValueError("initial_balance must be positive")
     if not 0 <= fee_rate < 1 or not 0 <= slippage_rate < 1:
