@@ -5,6 +5,7 @@ Run with: python -m src.dashboard
 """
 from __future__ import annotations
 
+import csv
 import json
 import math
 import os
@@ -189,6 +190,38 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
                 "دفتر معاملات هنوز ساخته نشده است",
         })
 
+        ledger_sync_status = "missing"
+        ledger_sync_detail = "برای تطبیق باید دفتر CSV و حافظه آماده باشند"
+        if ledger_ok and memory_ok:
+            try:
+                with trades_file.open("r", encoding="utf-8", newline="") as stream:
+                    csv_trade_count = sum(1 for _ in csv.DictReader(stream))
+                trade_count_rows = _query_memory(
+                    memory_file, "SELECT COUNT(*) AS count FROM trades"
+                )
+                if not trade_count_rows:
+                    ledger_sync_status = "error"
+                    ledger_sync_detail = "تعداد معاملات SQLite قابل خواندن نیست"
+                else:
+                    db_trade_count = int(trade_count_rows[0]["count"])
+                    if csv_trade_count == db_trade_count:
+                        ledger_sync_status = "ok"
+                        ledger_sync_detail = f"تعداد رکوردها برابر است: {csv_trade_count}"
+                    else:
+                        ledger_sync_status = "warning"
+                        ledger_sync_detail = (
+                            f"تعداد CSV برابر {csv_trade_count} و تعداد SQLite برابر {db_trade_count} است؛ "
+                            "احتمال ناهماهنگی پس از توقف ناگهانی وجود دارد"
+                        )
+            except (OSError, csv.Error, ValueError, TypeError):
+                ledger_sync_status = "error"
+                ledger_sync_detail = "تطبیق دفتر معاملات و حافظه با خطا مواجه شد"
+        checks.append({
+            "id": "ledger_sync", "label": "تطبیق معاملات",
+            "status": ledger_sync_status,
+            "detail": ledger_sync_detail,
+        })
+
         model_file = project_path(os.getenv("MODEL_PATH", "data/model.joblib"))
         model_ok = model_file.is_file() and model_file.stat().st_size > 0
         checks.append({
@@ -200,7 +233,8 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
 
         errors = sum(item["status"] == "error" for item in checks)
         missing = sum(item["status"] == "missing" for item in checks)
-        overall = "error" if errors else "warning" if missing else "ok"
+        warnings = sum(item["status"] == "warning" for item in checks)
+        overall = "error" if errors else "warning" if missing or warnings else "ok"
         return jsonify({"overall": overall, "checks": checks})
 
     @app.get("/api/trades")
