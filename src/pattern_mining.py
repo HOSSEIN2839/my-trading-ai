@@ -124,8 +124,8 @@ def mine_patterns(
             candidates.append({
                 "feature": feature,
                 "bin": int(bin_id),
-                "lower_bound": float(edges[bin_id]),
-                "upper_bound": float(edges[bin_id + 1]),
+                "lower_bound": None if bin_id == 0 else float(edges[bin_id]),
+                "upper_bound": None if bin_id == len(edges) - 2 else float(edges[bin_id + 1]),
                 "direction": direction,
                 "train_support": support,
                 "train_mean_forward_return": mean_return,
@@ -133,6 +133,7 @@ def mine_patterns(
                 "test_mean_forward_return": float(np.mean(test_returns)),
                 "test_directional_hit_rate": wins / test_support,
                 "test_hit_rate_wilson_95_lower": _wilson_lower(wins, test_support),
+                "train_mean_oriented_return": float(np.mean(train_returns if direction == "BUY" else -train_returns)),
                 "test_mean_oriented_return": float(np.mean(oriented)),
                 "research_only": True,
             })
@@ -186,8 +187,10 @@ def mine_patterns(
                         "features": [left_name, right_name],
                         "bins": [int(left_bin), int(right_bin)],
                         "bounds": [
-                            [float(left_edges[left_bin]), float(left_edges[left_bin + 1])],
-                            [float(right_edges[right_bin]), float(right_edges[right_bin + 1])],
+                            [None if left_bin == 0 else float(left_edges[left_bin]),
+                             None if left_bin == len(left_edges) - 2 else float(left_edges[left_bin + 1])],
+                            [None if right_bin == 0 else float(right_edges[right_bin]),
+                             None if right_bin == len(right_edges) - 2 else float(right_edges[right_bin + 1])],
                         ],
                         "direction": direction,
                         "train_support": support,
@@ -196,13 +199,14 @@ def mine_patterns(
                         "test_mean_forward_return": float(np.mean(test_returns)),
                         "test_directional_hit_rate": wins / test_support,
                         "test_hit_rate_wilson_95_lower": _wilson_lower(wins, test_support),
+                        "train_mean_oriented_return": float(np.mean(train_returns if direction == "BUY" else -train_returns)),
                         "test_mean_oriented_return": float(np.mean(oriented)),
                         "research_only": True,
                     })
 
     interaction_candidate_count = len(candidates) - single_feature_candidate_count
     candidates.sort(
-        key=lambda item: (item["test_mean_oriented_return"], item["test_support"]),
+        key=lambda item: (item["train_mean_oriented_return"], item["train_support"]),
         reverse=True,
     )
     return {
@@ -223,6 +227,7 @@ def mine_patterns(
             "Exploratory patterns are not automatically used by the bot.",
             "Holdout results can be optimistic when many patterns are tested; validate on untouched periods.",
             "Forward close returns omit fees, spread, slippage, liquidity and executable fills.",
+            "Overlapping forward-return labels are dependent; Wilson bounds are descriptive, not calibrated confidence under serial correlation.",
             "No pattern or metric guarantees future profitability.",
         ],
     }
