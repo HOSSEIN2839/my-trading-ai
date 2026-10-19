@@ -25,8 +25,10 @@ class PaperBroker:
             raise ValueError("fee_rate must be finite and in [0, 1)")
         self.state_path = project_path(state_path)
         self.trades_path = project_path(trades_path)
+        self.transaction_path = self.state_path.with_suffix(".transaction.json")
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
         self.fee_rate = float(fee_rate)
+        self._recover_pending_transaction()
         if self.state_path.exists():
             self.state = json.loads(self.state_path.read_text(encoding="utf-8"))
             self._validate_state()
@@ -68,10 +70,49 @@ class PaperBroker:
             if not (float(pos["stop"]) < float(pos["entry"]) < float(pos["target"])):
                 raise ValueError("paper position stop/entry/target are inconsistent")
 
-    def _save(self):
+    def _write_state_snapshot(self, state):
         tmp = self.state_path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self.state, indent=2, allow_nan=False), encoding="utf-8")
+        tmp.write_text(json.dumps(state, indent=2, allow_nan=False), encoding="utf-8")
         tmp.replace(self.state_path)
+
+    def _save(self):
+        self._write_state_snapshot(self.state)
+
+    def _recover_pending_transaction(self):
+        """Roll back an interrupted cross-file trade transaction before loading state."""
+        if not self.transaction_path.exists():
+            return
+        try:
+            journal = json.loads(self.transaction_path.read_text(encoding="utf-8"))
+            old_state = journal["old_state"]
+            csv_existed = journal["csv_existed"]
+            csv_size = journal["csv_size"]
+            if (
+                not isinstance(old_state, dict)
+                or not isinstance(csv_existed, bool)
+                or not isinstance(csv_size, int)
+                or csv_size < 0
+            ):
+                raise ValueError("invalid transaction journal fields")
+            json.dumps(old_state, allow_nan=False)
+        except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError(
+                "paper trade recovery journal is corrupt; refusing to start with uncertain state"
+            ) from exc
+
+        if csv_existed:
+            if not self.trades_path.exists():
+                raise RuntimeError(
+                    "paper trade recovery needs the previous trades CSV, but it is missing"
+                )
+            with self.trades_path.open("r+b") as log_file:
+                log_file.truncate(csv_size)
+        elif self.trades_path.exists():
+            self.trades_path.unlink()
+
+        self._write_state_snapshot(old_state)
+        self.transaction_path.unlink()
+
 
     def equity(self, mark_price: float) -> float:
         """Cash plus marked-to-market value of any open simulated position."""
@@ -124,14 +165,25 @@ class PaperBroker:
         raises, restore the previous in-memory state and truncate any partially appended
         CSV record so a caught exception cannot leave the running process inconsistent.
         """
+        if self.transaction_path.exists():
+            raise RuntimeError("an unresolved paper trade transaction exists; restart to recover it")
         previous_state = self.state.copy()
         csv_existed = self.trades_path.exists()
         csv_size = self.trades_path.stat().st_size if csv_existed else 0
+        journal = {
+            "old_state": previous_state,
+            "csv_existed": csv_existed,
+            "csv_size": csv_size,
+        }
+        journal_tmp = self.transaction_path.with_suffix(".tmp")
+        journal_tmp.write_text(json.dumps(journal, indent=2, allow_nan=False), encoding="utf-8")
+        journal_tmp.replace(self.transaction_path)
         self.state["balance"] = balance
         self.state["position"] = position
         try:
             self._log(side, price, quantity, fee, reason)
             self._save()
+            self.transaction_path.unlink()
         except BaseException:
             self.state = previous_state
             try:
@@ -140,9 +192,12 @@ class PaperBroker:
                         log_file.truncate(csv_size)
                 elif self.trades_path.exists():
                     self.trades_path.unlink()
+                self._write_state_snapshot(previous_state)
+                if self.transaction_path.exists():
+                    self.transaction_path.unlink()
             except OSError as rollback_error:
                 raise RuntimeError(
-                    "paper trade persistence failed and CSV rollback also failed; inspect state and trades log"
+                    "paper trade persistence failed and rollback also failed; restart to recover from the transaction journal"
                 ) from rollback_error
             raise
 

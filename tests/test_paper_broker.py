@@ -157,6 +157,59 @@ def test_broker_rejects_corrupt_persisted_position(tmp_path):
         PaperBroker(1000, state_path=state_path, trades_path=tmp_path / "trades.csv")
 
 
+def test_broker_recovers_interrupted_trade_from_transaction_journal(tmp_path):
+    import json
+
+    broker = make_broker(tmp_path)
+    state_path = broker.state_path
+    trades_path = broker.trades_path
+    journal_path = state_path.with_suffix(".transaction.json")
+    old_state = json.loads(state_path.read_text(encoding="utf-8"))
+    old_csv = trades_path.read_bytes()
+
+    # Simulate a process interruption after the trade log and state were changed,
+    # but before the transaction journal could be removed.
+    journal_path.write_text(
+        json.dumps({
+            "old_state": old_state,
+            "csv_existed": True,
+            "csv_size": len(old_csv),
+        }),
+        encoding="utf-8",
+    )
+    new_state = {
+        **old_state,
+        "balance": 899.9,
+        "position": {"entry": 100, "quantity": 1, "stop": 90, "target": 120},
+    }
+    state_path.write_text(json.dumps(new_state), encoding="utf-8")
+    with trades_path.open("ab") as log_file:
+        log_file.write(b"interrupted,BUY,100,1,0.1,899.9,crash\\n")
+
+    recovered = PaperBroker(
+        1000,
+        state_path=state_path,
+        trades_path=trades_path,
+    )
+
+    assert recovered.state == old_state
+    assert trades_path.read_bytes() == old_csv
+    assert not journal_path.exists()
+
+
+def test_broker_refuses_to_start_with_corrupt_transaction_journal(tmp_path):
+    broker = make_broker(tmp_path)
+    journal_path = broker.state_path.with_suffix(".transaction.json")
+    journal_path.write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="recovery journal is corrupt"):
+        PaperBroker(
+            1000,
+            state_path=broker.state_path,
+            trades_path=broker.trades_path,
+        )
+
+
 def test_last_processed_candle_survives_restart(tmp_path):
     broker = make_broker(tmp_path)
     candle_id = "2026-10-19T10:15:00+00:00"
