@@ -160,3 +160,50 @@ def mine_patterns(
             "No pattern or metric guarantees future profitability.",
         ],
     }
+
+
+def main() -> None:
+    """Download a bounded public sample and save an exploratory pattern report."""
+    import json
+    import os
+    import ccxt
+
+    from dotenv import load_dotenv
+    from src.market import add_indicators
+    from src.paths import project_path
+
+    load_dotenv()
+    symbol = os.getenv("SYMBOL", "BTC/USDT")
+    timeframe = os.getenv("TIMEFRAME", "15m")
+    requested_limit = int(os.getenv("PATTERN_CANDLE_LIMIT", "1000"))
+    if not 100 <= requested_limit <= 1000:
+        raise SystemExit("PATTERN_CANDLE_LIMIT must be between 100 and 1000 for this one-request mode.")
+    exchange = ccxt.binance({"enableRateLimit": True, "timeout": 20000})
+    rows = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=requested_limit)
+    if len(rows) < 100:
+        raise SystemExit("Not enough public historical candles for pattern mining.")
+    frame = pd.DataFrame(rows, columns=["timestamp", "open", "high", "low", "close", "volume"])
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], unit="ms", utc=True)
+    frame = frame.drop_duplicates("timestamp").sort_values("timestamp").reset_index(drop=True)
+    # Exclude the potentially unfinished candle.
+    frame = frame.iloc[:-1].reset_index(drop=True)
+    frame = frame.replace([np.inf, -np.inf], np.nan)
+    frame = frame.dropna(subset=["open", "high", "low", "close", "volume"])
+    if (frame[["open", "high", "low", "close"]] <= 0).any().any() or (frame["volume"] < 0).any():
+        raise SystemExit("Public market data contains invalid prices or volume.")
+    frame = add_indicators(frame)
+    report = mine_patterns(frame)
+    report["symbol"] = symbol
+    report["timeframe"] = timeframe
+    report_path = project_path(os.getenv("PATTERN_REPORT_PATH", "data/pattern_report.json"))
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = report_path.with_suffix(report_path.suffix + ".tmp")
+    temporary_path.write_text(json.dumps(report, indent=2, allow_nan=False), encoding="utf-8")
+    temporary_path.replace(report_path)
+    print(json.dumps({key: value for key, value in report.items() if key != "patterns"}, indent=2))
+    print(f"Pattern report saved to: {report_path}")
+    print("Research-only: discovered patterns do not change bot decisions or place orders.")
+
+
+if __name__ == "__main__":
+    main()
