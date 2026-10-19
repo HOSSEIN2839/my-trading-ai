@@ -38,6 +38,14 @@ def _query_memory(path: Path, query: str, params: tuple = ()) -> list[dict[str, 
         return []
 
 
+def _request_limit() -> int:
+    try:
+        value = int(request.args.get("limit", 25))
+    except (TypeError, ValueError):
+        value = 25
+    return min(max(value, 1), 100)
+
+
 def create_app(state_path: str | Path | None = None, memory_path: str | Path | None = None) -> Flask:
     app = Flask(__name__, static_folder=None)
     state_file = Path(state_path or os.getenv("PAPER_STATE_PATH", "data/paper_state.json"))
@@ -90,7 +98,7 @@ def create_app(state_path: str | Path | None = None, memory_path: str | Path | N
 
     @app.get("/api/trades")
     def trades():
-        limit = min(max(int(request.args.get("limit", 25)), 1), 100)
+        limit = _request_limit()
         rows = _query_memory(
             memory_file,
             "SELECT id, timestamp, symbol, side, price, quantity, fee, realized_pnl, reason "
