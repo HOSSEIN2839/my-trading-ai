@@ -6,6 +6,7 @@ call external AI services, or claim that stored patterns are profitable.
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -107,8 +108,22 @@ class TradingMemory:
         decision = decision.upper()
         if decision not in {"BUY", "SELL", "HOLD"}:
             raise ValueError("decision must be BUY, SELL or HOLD")
-        if confidence is not None and not 0 <= confidence <= 1:
-            raise ValueError("confidence must be between 0 and 1")
+        if price is not None:
+            try:
+                valid_price = math.isfinite(float(price)) and float(price) > 0
+            except (TypeError, ValueError):
+                valid_price = False
+            if not valid_price:
+                raise ValueError("price must be finite and positive when provided")
+            price = float(price)
+        if confidence is not None:
+            try:
+                valid_confidence = math.isfinite(float(confidence)) and 0 <= float(confidence) <= 1
+            except (TypeError, ValueError):
+                valid_confidence = False
+            if not valid_confidence:
+                raise ValueError("confidence must be finite and between 0 and 1")
+            confidence = float(confidence)
         cur = self._conn.execute(
             """INSERT INTO decisions(timestamp,symbol,timeframe,decision,price,confidence,context_json)
                VALUES(?,?,?,?,?,?,?)""",
@@ -133,6 +148,15 @@ class TradingMemory:
         side = side.upper()
         if side not in {"BUY", "SELL"}:
             raise ValueError("side must be BUY or SELL")
+        numeric_values = (price, quantity, fee) + (() if realized_pnl is None else (realized_pnl,))
+        try:
+            valid_numbers = all(math.isfinite(float(value)) for value in numeric_values)
+        except (TypeError, ValueError):
+            valid_numbers = False
+        if not valid_numbers:
+            raise ValueError("trade values must be finite numbers")
+        price, quantity, fee = float(price), float(quantity), float(fee)
+        realized_pnl = float(realized_pnl) if realized_pnl is not None else None
         if price <= 0 or quantity <= 0 or fee < 0:
             raise ValueError("price and quantity must be positive; fee cannot be negative")
         cur = self._conn.execute(
