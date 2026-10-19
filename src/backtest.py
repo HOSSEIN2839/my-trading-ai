@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable
 
 import ccxt
+import numpy as np
 import pandas as pd
 
 from src.market import add_indicators, technical_signal
@@ -26,10 +27,18 @@ def _valid_candles(candles: pd.DataFrame) -> pd.DataFrame:
     frame = candles.copy().reset_index(drop=True)
     for col in ("open", "high", "low", "close", "volume", "atr"):
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
-    if frame[list(required - {"timestamp"})].isna().any().any():
-        raise ValueError("candles contain missing or non-numeric values")
+    numeric_columns = ["open", "high", "low", "close", "volume", "atr"]
+    if frame[numeric_columns].isna().any().any() or not np.isfinite(frame[numeric_columns].to_numpy(dtype=float)).all():
+        raise ValueError("candles contain missing, non-numeric, or non-finite values")
+    timestamps = pd.to_datetime(frame["timestamp"], utc=True, errors="coerce")
+    if timestamps.isna().any():
+        raise ValueError("candles contain invalid timestamps")
+    if not timestamps.is_monotonic_increasing:
+        raise ValueError("candles must be ordered by ascending timestamp")
     if (frame[["open", "high", "low", "close"]] <= 0).any().any():
         raise ValueError("OHLC prices must be positive")
+    if (frame["volume"] < 0).any() or (frame["atr"] < 0).any():
+        raise ValueError("volume and ATR cannot be negative")
     if (frame["high"] < frame[["open", "close", "low"]].max(axis=1)).any():
         raise ValueError("candle high is inconsistent with OHLC values")
     if (frame["low"] > frame[["open", "close", "high"]].min(axis=1)).any():
