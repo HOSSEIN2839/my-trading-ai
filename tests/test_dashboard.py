@@ -124,3 +124,17 @@ def test_integration_diagnostics_warn_when_runtime_artifacts_are_missing(tmp_pat
     assert checks["memory"] == "missing"
     assert checks["ledger"] == "missing"
     assert checks["model"] == "missing"
+
+
+def test_integration_diagnostics_flag_corrupt_state_as_error(tmp_path, monkeypatch):
+    state_path = tmp_path / "paper_state.json"
+    state_path.write_text("{not-json", encoding="utf-8")
+    monkeypatch.setenv("MODE", "paper")
+    app = create_app(state_path=state_path, memory_path=tmp_path / "missing.sqlite3")
+
+    payload = app.test_client().get("/api/integration").get_json()
+    checks = {item["id"]: item for item in payload["checks"]}
+
+    assert payload["overall"] == "error"
+    assert checks["state"]["status"] == "error"
+    assert "JSON" in checks["state"]["detail"]
