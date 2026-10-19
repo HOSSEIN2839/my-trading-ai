@@ -184,7 +184,7 @@ def run_backtest(
         "net_return_pct": net_profit / initial_balance * 100,
         "trades": count,
         "win_rate_pct": wins / count * 100 if count else 0.0,
-        "profit_factor": gross_profit / gross_loss if gross_loss else (float("inf") if gross_profit else 0.0),
+        "profit_factor": gross_profit / gross_loss if gross_loss else (None if gross_profit else 0.0),
         "max_drawdown_pct": max_drawdown * 100,
         "fee_rate": fee_rate,
         "slippage_rate": slippage_rate,
