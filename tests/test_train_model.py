@@ -25,7 +25,7 @@ def _sample_candles(rows: int = 420) -> pd.DataFrame:
             "interval": "15m",
             # Force nanosecond resolution before converting to Unix milliseconds;
             # pandas 3 may otherwise use a different datetime resolution by default.
-            "timestamp": (timestamps.astype("datetime64[ns]").astype("int64") // 1_000_000),
+            "timestamp": (timestamps.as_unit("ns").asi8 // 1_000_000),
             "open": open_price,
             "high": np.maximum(open_price, close) + 10,
             "low": np.minimum(open_price, close) - 10,
