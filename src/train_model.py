@@ -102,7 +102,10 @@ def _load_local_candles(path: str, symbol: str, timeframe: str) -> pd.DataFrame:
 
     df = df.sort_values("timestamp").reset_index(drop=True)
     try:
-        interval = pd.Timedelta(timeframe)
+        # Pandas 3 interprets the legacy suffix "m" differently; normalize minute
+        # timeframes (for example "15m") to the unambiguous "15min" spelling.
+        duration_text = timeframe[:-1] + "min" if timeframe.endswith("m") and not timeframe.endswith("min") else timeframe
+        interval = pd.Timedelta(duration_text)
     except (TypeError, ValueError) as exc:
         raise SystemExit(f"تایم‌فریم قابل‌فهم نیست: {timeframe}") from exc
     if interval <= pd.Timedelta(0):
